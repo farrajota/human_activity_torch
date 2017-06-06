@@ -10,6 +10,9 @@ This work splits human activity recognition into three stages:
 2. Detect human body joints using a [stacked auto-encoder network](https://github.com/farrajota/human_pose_estimation_torch) ([modified hourglass](https://github.com/anewell/pose-hg-train)).
 3. Use a RNN to classify activities.
 
+# WARNING
+
+This repo is a work in progress. This warning shall be removed when code is working. For now, this repo represents only the scafold structure for the code.
 
 # Installation
 
