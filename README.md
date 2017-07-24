@@ -26,6 +26,10 @@ This repo is a work in progress. This warning shall be removed when code is work
 
 To use this example code, some packages are required for it to work.
 
+```bash
+luarocks install loadcaffe
+```
+
 ### dbcollection
 
 To install the dbcollection package do the following:
