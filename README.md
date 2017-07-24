@@ -14,43 +14,19 @@ This work splits human activity recognition into three stages:
 
 This repo is a work in progress. This warning shall be removed when code is working. For now, this repo represents only the scafold structure for the code.
 
-# Installation
+## Installation
 
-## Requirements
+### Requirements
 
 - NVIDIA GPU with compute capability 3.5+ (2GB+ ram)
 - [Torch7](http://torch.ch/docs/getting-started.html)
-- [Fast-RCNN package](https://github.com/farrajota/fast-rcnn-torch)
-- [dbcollection](https://github.com/farrajota/dbcollection)
+- [dbcollection](https://github.com/dbcollection/dbcollection)
 
-## Packages/dependencies installation
+### Packages/dependencies installation
 
-To use this example code, some packages are required for it to work: `fastrcnn` and `dbcollection`.
+To use this example code, some packages are required for it to work.
 
-#### fastrcnn
-
-To install the Fast R-CNN package do the following:
-
-- install all the necessary dependencies.
-
-```bash
-luarocks install tds
-luarocks install cudnn
-luarocks install inn
-luarocks install matio
-luarocks install torchnet
-```
-
-- download and install the package.
-
-```bash
-git clone https://github.com/farrajota/fast-rcnn-torch
-cd fast-rcnn-torch && luarocks make rocks/*
-```
-
-> For more information about the `fastrcnn` package see [here](https://github.com/farrajota/fast-rcnn-torch).
-
-#### dbcollection
+### dbcollection
 
 To install the dbcollection package do the following:
 
@@ -60,17 +36,17 @@ To install the dbcollection package do the following:
 pip install dbcollection
 ```
 
-- download the git repository to disk.
+- download the lua/torch7 git repository to disk.
 ```
-git clone --recursive https://github.com/farrajota/dbcollection
+git clone https://github.com/dbcollection/dbcollection-torch7
 ```
 
 - install the Lua package.
 ```
-cd APIs/lua && luarocks make
+cd dbcollection-torch7 && luarocks make
 ```
 
-> For more information about the dbcollection package see [here](https://github.com/farrajota/dbcollection).
+> For more information about the dbcollection package see [here](https://github.com/dbcollection/dbcollection).
 
 
 # Getting started
