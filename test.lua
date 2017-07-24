@@ -1,5 +1,5 @@
 --[[
-    Script for testing a human pose predictor.
+    Script for testing a human activity estimator.
 
     Available/valid datasets: UCF Sports Action.
 --]]
