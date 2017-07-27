@@ -35,7 +35,7 @@ local function loader_ucf_sports(set_name)
     local set_size = dbloader:size(set_name)[1]
 
     -- number of categories
-    local num_activities = dbloader:size(set_name, 'activities')[1]
+    local num_activities = dbloader:size(set_name, 'activities')
 
     -- data loader function
     local data_loader = function(idx)
@@ -44,25 +44,30 @@ local function loader_ucf_sports(set_name)
         local iactivity = math.random(1, num_activities)
 
         -- select a random video from the selected activity
-        local ivideo = dbloader:get(set_name, 'list_videos_per_activity', iactivity)
+        local video_ids = unpad_list(dbloader:get(set_name, 'list_videos_per_activity', iactivity))
+        local video = videos[math.random(video_ids[1], video_ids[#video_ids])] + 1  -- set to 1-index
+
+        -- fetch all object ids belonging to the video
+        local obj_ids = unpad_list(dbloader:get(set_name, 'list_object_ids_per_video', video) + 1)  -- set to 1-index
 
         -- get data from the selected video
-        local data = dbloader:object(set_name, ivideo, true)[1]
+        local data = dbloader:object(set_name, obj_ids, true)
 
-        local label = dbloader.object(set_name, idx)[1][4]
+        local label = iactivity
 
         -- random start from the video sequence
-        local idx_ini = math.random(1, data[5] - opt.seq_length)
+        local idx_ini = math.random(1, #obj_ids - opt.seq_length)
 
-        local imgs = {}
+        local imgs, bboxes = {}, {}
         for i=1, opt.seq_length do
-            local filename = idx_ini --ascii2str(data[1])[1]
+            local filename = ascii2str(data[i][1])
             local img_filename = paths.concat(dbloader.data_dir, filename)
 
             table.insert(imgs, image.load(img_filename, 3, 'float'))
+            table.insert(bboxes, data[i][2])
         end
 
-        return imgs, label
+        return imgs, bboxes, label
     end
 
     return {
