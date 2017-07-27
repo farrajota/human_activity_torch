@@ -142,6 +142,15 @@ if not opt then
     torch.save(opt.save .. '/options.t7', opt)
 end
 
+--------------------------------------------------------------------------------
+-- Number of activities
+--------------------------------------------------------------------------------
+
+-- setup data loader
+local data_loader = select_dataset_loader(opt.dataset)
+local loader = data_loader['train']
+opt.num_activities = loader.num_activities
+
 
 -----------------------------------------------------------
 -- Functions
