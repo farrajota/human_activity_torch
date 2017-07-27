@@ -5,14 +5,10 @@
 require 'torch'
 require 'image'
 
+paths.dofile('utils/img.lua')
 
-paths.dofile('util/img.lua')
-paths.dofile('util/eval.lua')
-paths.dofile('util/Logger.lua')
-paths.dofile('util/store.lua')
-paths.dofile('util/draw.lua')
-paths.dofile('util/utils.lua')
 
+------------------------------------------------------------------------------------------------------------
 
 --[[ Function for data augmentation, randomly samples on a normal distribution. ]]--
 local function rnd(x)
@@ -24,74 +20,25 @@ end
 -- Transform data for one object sample
 -------------------------------------------------------------------------------
 
-function transform_data(img, keypoints, center, scale, nJoints)
+function transform_data(img, params)
+    assert(imgs)
+    assert(params)
 
-    -- inits
-    local rot = 0 -- set rotation to 0
+    -- Crop image
+    local img_transf = crop2(img.img, img.center, img.scale, params.rot, opt.inputRes)
 
-    -- Do rotation + scaling
-    if mode == 'train' then
-        -- Scale and rotation augmentation
-        scale = scale * (2 ^ rnd(opt.scale))
-        rot = rnd(opt.rotate)
-        if torch.uniform() <= opt.rotRate then
-            rot = 0
-        end
+    -- Flipping
+    if params.flip then
+        img_transf = flip(img_transf)
     end
 
-    -- Crop image + craft heatmap
-    local img_transf = crop2(img, center, scale, rot, opt.inputRes)
-    local heatmap = torch.zeros(nJoints, opt.outputRes, opt.outputRes)
-    for i = 1, nJoints do
-        if keypoints[i][1] > 1 then -- Checks that there is a ground truth annotation
-            local new_kp = transform(keypoints[i], center, scale, rot, opt.outputRes)
-            drawGaussian(heatmap[i], new_kp, opt.hmGauss)
-        end
-    end
-
-    -- Do image augmentation/normalization
-    if mode == 'train' then
-        -- Flipping
-        if torch.uniform() < .5 then
-            img_transf = flip(img_transf)
-            heatmap = shuffleLR(flip(heatmap))
-        end
-        -- color augmentation
-        if opt.colourjit then
-            local opts_jit = {brightness = 0.4,
-                              contrast = 0.4,
-                              saturation = 0.4}
-            img_transf = t.ColorJitter(opts_jit)(img_transf)
-        else
-            img_transf[1]:mul(torch.uniform(0.6, 1.4)):clamp(0,1)
-            img_transf[2]:mul(torch.uniform(0.6, 1.4)):clamp(0,1)
-            img_transf[3]:mul(torch.uniform(0.6, 1.4)):clamp(0,1)
-        end
-    end
+    -- color augmentation
+    img_transf[1]:mul(params.color_jit[1]):clamp(0,1)
+    img_transf[2]:mul(params.color_jit[2]):clamp(0,1)
+    img_transf[3]:mul(params.color_jit[3]):clamp(0,1)
 
     -- output
-    return img_transf, heatmap
-end
-
-------------------------------------------------------------------------------------------------------------
-
---[[ Transform the data for accuracy evaluation ]]
-function transform_data_test(img, keypoints, center, scale, nJoints)
-    -- inits
-    local rot = 0 -- set rotation to 0
-
-    -- Crop image + craft heatmap
-    local img_transf = crop2(img, center, scale, rot, opt.inputRes)
-    local heatmap = torch.zeros(nJoints, opt.outputRes, opt.outputRes)
-    for i = 1, nJoints do
-        if keypoints[i][1] > 1 then -- Checks that there is a ground truth annotation
-            --drawGaussian(heatmap[i], mytransform(torch.add(keypoints[i],1), c, s, r, opt.outputRes), 1)
-            drawGaussian(heatmap[i], mytransform(keypoints[i], center, scale, rot, opt.outputRes), opt.hmGauss or 1)
-        end
-    end
-
-    -- output: input, label, center, scale, normalize
-    return img_transf, keypoints:narrow(2,1,2), center, scale, normalize
+    return img_transf
 end
 
 
@@ -99,25 +46,73 @@ end
 -- Get a batch of data samples
 -------------------------------------------------------------------------------
 
-local function fetch_single_data(data_loader, idx)
-    assert(data_loader)
-    assert(idx)
+local function get_random_transforms(is_train)
+    assert(is_train)
 
-    local img, keypoints, center, scale, nJoints = data_loader.loader(idx)
+    local rot = 0
+    local scale = 1
+    local color_jit = {brightness = 1, contrast = 1, saturation = 1}
+    local flip = false
 
-    if type(img) ~= 'table' then
-        local imgs_t, heatmaps_t = transform_data(img, keypoints, center, scale, nJoints)
-        return {imgs_t, heatmaps_t }
-    else
-        return {}
+    if is_train then
+        -- scale
+        scale = scale * (2 ^ rnd(opt.scale))
+
+        -- rotation
+        rot = rnd(opt.rotate)
+        if torch.uniform() <= opt.rotRate then
+            rot = 0
+        end
+
+        -- Flipping
+        if torch.uniform() < .5 then
+            flip = true
+        end
+
+        -- color augmentation
+        color_jit = {torch.uniform(0.6, 1.4),
+                     torch.uniform(0.6, 1.4),
+                     torch.uniform(0.6, 1.4)}
     end
+
+    return {
+        rotation = rot,
+        scale = scale,
+        color_jit = color_jit,
+        flipping = flip
+    }
 end
 
 ------------------------------------------------------------------------------------------------------------
 
-local function get_batch(data_loader, batchSize)
+--[[ Fetch data (images + label) from a single video ]]--
+local function fetch_single_data(data_loader, idx, is_train)
+    assert(data_loader)
+    assert(idx)
+    assert(is_train)
+
+    local imgs, label = data_loader.loader(idx)
+
+    -- select some random transformations to apply to the entire set of images
+    local params_transform = get_random_transforms(is_train)
+
+    -- apply transforms to all images
+    local imgs_transf = {}
+    for i=1, #imgs do
+        local new_img = transform_data(imgs[i], params_transform)
+        table.insert(imgs_transf, new_img)
+    end
+
+    return imgs_resized, label
+end
+
+------------------------------------------------------------------------------------------------------------
+
+--[[ Create/build a batch of images + label ]]--
+local function get_batch(data_loader, batchSize, is_train)
     assert(data_loader)
     assert(batchSize)
+    assert(is_train)
 
     local size = data_loader.size
     local max_attempts = 30
@@ -129,7 +124,7 @@ local function get_batch(data_loader, batchSize)
         while not next(data) do
             local idx = torch.random(1, size)
             if not idxUsed[idx] then
-                data = fetch_single_data(data_loader, idx)
+                data = fetch_single_data(data_loader, idx, is_train)
                 idxUsed[idx] = 1
 
                 -- increment attempts counter. This avoids infinite loops
@@ -148,6 +143,22 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
+function getSampleBatch_new(data_loader, batchSize, is_train)
+    assert(data_loader)
+    assert(batchSize)
+    assert(is_train)
+
+    -- get batch data
+    local sample = get_batch(data_loader, batchSize, is_train)
+
+    -- concatenate data
+    local imgs_tensor
+    local imgs_tensor = nn.JoinTable(1):forward(sample[1])
+
+    return imgs_tensor, label
+end
+
+------
 function getSampleBatch(data_loader, batchSize)
     assert(data_loader)
 
