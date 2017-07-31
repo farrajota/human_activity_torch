@@ -1,5 +1,5 @@
 --[[
-    Data sampling functions.
+    Data sampling/fetching functions.
 ]]
 
 
@@ -12,12 +12,12 @@ local function get_db_loader(name)
 
     local dbloader
     local str = string.lower(name)
-    if str == 'ucfsports' then
-        dbloader = dbc.load{name='ucfsports', task='recognition', data_dir=opt.data_dir}
-    elseif str == 'ucf101' then
-        dbloader = dbc.load{name='ucf101', task='recognition', data_dir=opt.data_dir}
+    if str == 'ucf_sports' then
+        dbloader = dbc.load{name='ucf_sports', task='recognition', data_dir=opt.data_dir}
+    elseif str == 'ucf_101' then
+        dbloader = dbc.load{name='ucf_101', task='recognition', data_dir=opt.data_dir}
     else
-        error(('Invalid dataset name: %s. Available datasets: ucfsports | ucf101.'):format(name))
+        error(('Invalid dataset name: %s. Available datasets: ucf_sports | ucf_101.'):format(name))
     end
     return dbloader
 end
@@ -29,13 +29,13 @@ local function loader_ucf_sports(set_name)
     local ascii2str = utils.string_ascii.convert_ascii_to_str
     local unpad_list = utils.pad.unpad_list
 
-    local dbloader = get_db_loader('ucfsports')
+    local dbloader = get_db_loader('ucf_sports')
 
     -- number of samples per train/test sets
     local set_size = dbloader:size(set_name)[1]
 
     -- number of categories
-    local num_activities = dbloader:size(set_name, 'activities')
+    local num_activities = dbloader:size(set_name, 'activities')[1]
 
     -- data loader function
     local data_loader = function(idx)
@@ -45,29 +45,37 @@ local function loader_ucf_sports(set_name)
 
         -- select a random video from the selected activity
         local video_ids = unpad_list(dbloader:get(set_name, 'list_videos_per_activity', iactivity))
-        local video = videos[math.random(video_ids[1], video_ids[#video_ids])] + 1  -- set to 1-index
+        local video = video_ids[math.random(1, #video_ids)] + 1  -- set to 1-index
 
         -- fetch all object ids belonging to the video
-        local obj_ids = unpad_list(dbloader:get(set_name, 'list_object_ids_per_video', video) + 1)  -- set to 1-index
+        local obj_ids = unpad_list(dbloader:get(set_name, 'list_object_ids_per_video', video) + 1, 0)  -- set to 1-index
+
+        -- random start from the video sequence
+        local idx_ini = math.random(1, #obj_ids - opt.seq_length) - 1
 
         -- get data from the selected video
-        local data = dbloader:object(set_name, obj_ids, true)
+        local imgs = {}
+        for iobj=1, opt.seq_length do
+            local data = dbloader:object(set_name, obj_ids[idx_ini + iobj], true)
+
+            local filename = ascii2str(data[1])
+            local img_filename = paths.concat(dbloader.data_dir, filename)
+            local img = image.load(img_filename, 3, 'float')
+
+            local bbox = data[2]:squeeze()
+            local center = torch.FloatTensor{(bbox[1]+bbox[3])/2, (bbox[2]+bbox[4])/2}
+            local scale = (bbox[4]-bbox[2]) / 200 * 1.5
+
+            table.insert(imgs, {img = img, 
+                                center = center, 
+                                scale = scale, 
+                                filename = img_filename, 
+                                bbox = bbox})
+        end
 
         local label = iactivity
 
-        -- random start from the video sequence
-        local idx_ini = math.random(1, #obj_ids - opt.seq_length)
-
-        local imgs, bboxes = {}, {}
-        for i=1, opt.seq_length do
-            local filename = ascii2str(data[i][1])
-            local img_filename = paths.concat(dbloader.data_dir, filename)
-
-            table.insert(imgs, image.load(img_filename, 3, 'float'))
-            table.insert(bboxes, data[i][2])
-        end
-
-        return imgs, bboxes, label
+        return imgs, label
     end
 
     return {
@@ -83,7 +91,7 @@ local function loader_ucf_101(set_name)
     local string_ascii = require 'dbcollection.utils.string_ascii'
     local ascii2str = string_ascii.convert_ascii_to_str
 
-    local dbloader = get_db_loader('ucf101')
+    local dbloader = get_db_loader('ucf_101')
 
     -- number of samples per train/test sets
     local set_size = dbloader:size(set_name)[1]
@@ -101,12 +109,12 @@ end
 
 local function fetch_loader_dataset(name, mode)
     local str = string.lower(name)
-    if str == 'ucfsports' then
+    if str == 'ucf_sports' then
         return loader_ucf_sports(mode)
-    elseif str == 'ucf101' then
+    elseif str == 'ucf_101' then
         return loader_ucf_101(mode)
     else
-        error(('Invalid dataset name: %s. Available datasets: ucfsports | ucf101.'):format(name))
+        error(('Invalid dataset name: %s. Available datasets: ucf_sports | ucf_101.'):format(name))
     end
 end
 ------------------------------------------------------------------------------------------------------------

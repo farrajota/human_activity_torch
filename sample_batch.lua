@@ -5,7 +5,7 @@
 require 'torch'
 require 'image'
 
-paths.dofile('utils/img.lua')
+paths.dofile('util/img.lua')
 
 
 ------------------------------------------------------------------------------------------------------------
@@ -21,11 +21,11 @@ end
 -------------------------------------------------------------------------------
 
 function transform_data(img, params)
-    assert(imgs)
+    assert(img)
     assert(params)
 
     -- Crop image
-    local img_transf = crop2(img.img, img.center, img.scale, params.rot, opt.inputRes)
+    local img_transf = crop2(img.img, img.center, img.scale, params.rotation, opt.inputRes)
 
     -- Flipping
     if params.flip then
@@ -103,7 +103,7 @@ local function fetch_single_data(data_loader, idx, is_train)
         table.insert(imgs_transf, new_img)
     end
 
-    return imgs_resized, label
+    return {imgs_transf, label}
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
-function getSampleBatch_new(data_loader, batchSize, is_train)
+function getSampleBatch(data_loader, batchSize, is_train)
     assert(data_loader)
     assert(batchSize)
     assert(is_train)
@@ -152,78 +152,23 @@ function getSampleBatch_new(data_loader, batchSize, is_train)
     local sample = get_batch(data_loader, batchSize, is_train)
 
     -- concatenate data
-    local imgs_tensor
-    local imgs_tensor = nn.JoinTable(1):forward(sample[1])
+    local imgs_tensor = torch.FloatTensor(batchSize, opt.seq_length,
+                                          3, opt.inputRes, opt.inputRes):fill(0)
 
-    return imgs_tensor, label
-end
-
-------
-function getSampleBatch(data_loader, batchSize)
-    assert(data_loader)
-
-    local batchSize = batchSize or opt.batchSize or 1
-
-    -- get batch data
-    local sample = get_batch(data_loader, batchSize)
-
-    -- concatenate data
-    local imgs_tensor = torch.FloatTensor(batchSize,
-                                          sample[1][1]:size(1),
-                                          sample[1][1]:size(2),
-                                          sample[1][1]:size(3)):fill(0)
-    local heatmaps_tensor = torch.FloatTensor(batchSize,
-                                              sample[1][2]:size(1),
-                                              sample[1][2]:size(2),
-                                              sample[1][2]:size(3)):fill(0)
-
+    -- images
     for i=1, batchSize do
-        imgs_tensor[i]:copy(sample[i][1])
-        heatmaps_tensor[i]:copy(sample[i][2])
+        for j=1, opt.seq_length do
+            imgs_tensor[i][j]:copy(sample[i][1][j])
+        end
+    end
+
+    -- labels
+    local labels_tensor = torch.IntTensor(batchSize):fill(0)
+    for i=1, batchSize do
+        labels_tensor[i] = sample[i][2]
     end
 
     collectgarbage()
 
-    return imgs_tensor, heatmaps_tensor
-end
-
-------------------------------------------------------------------------------------------------------------
-
-function getSampleTest(data_loader, idx)
-
-    -- set rotation to 0
-    local rot = 0
-
-    -- Load image + keypoints + other data
-    local img, keypoints, center, scale, nJoints, normalize = data_loader.loader(idx)
-
-    -- Crop image + craft heatmap
-    local img_transf = crop2(img, center, scale, rot, opt.inputRes)
-    local heatmap = torch.zeros(nJoints, opt.outputRes, opt.outputRes)
-    for i = 1,nJoints do
-        -- Checks that there is a ground truth annotation
-        if keypoints[i][1] > 1 then
-            drawGaussian(heatmap[i], mytransform(keypoints[i], center, scale, rot, opt.outputRes), opt.hmGauss or 1)
-        end
-    end
-
-    -- output: input, label, center, scale, normalize
-    return img_transf, keypoints:narrow(2,1,2), center, scale, normalize
-end
-
-------------------------------------------------------------------------------------------------------------
-
-function getSampleBenchmark(data_loader, idx)
-
-    -- set rotation to 0
-    local rot = 0
-
-    -- Load image + keypoints + other data
-    local img, keypoints, center, scale, nJoints, normalize = data_loader.loader(idx)
-
-    -- Crop image + craft heatmap
-    local img_transf = crop2(img, center, scale, rot, opt.inputRes)
-
-    -- output: input, label, center, scale, normalize
-    return img_transf, center, scale, normalize
+    return imgs_tensor, labels_tensor
 end
