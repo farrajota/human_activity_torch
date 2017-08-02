@@ -82,12 +82,8 @@ local function Parse(arg)
     local opt = cmd:parse(arg or {})
     opt.expDir = paths.concat(opt.expDir, opt.dataset)
     opt.save = paths.concat(opt.expDir, opt.expID)
-    opt.ensemble = paths.concat(opt.expDir, opt.ensembleID)
     if opt.loadModel == '' or opt.loadModel == 'none' then
         opt.load = paths.concat(opt.save, 'final_model.t7')
-        --opt.load = paths.concat(opt.save, 'model_final.t7')
-        --opt.load = paths.concat(opt.save, 'best_model_accuracy.t7')
-        --opt.load = paths.concat(opt.save, 'best_model_accu.t7')
     else
         opt.load = opt.loadModel
     end
@@ -96,8 +92,6 @@ local function Parse(arg)
         utils = paths.dofile('util/utils.lua')
     end
 
-    opt.schedule = utils.Str2TableFn(opt.schedule)
-
     if string.lower(opt.data_dir) == 'none' then
         opt.data_dir = ''
     end
@@ -105,9 +99,6 @@ local function Parse(arg)
     -- data augment testing vars
     opt.continue = utils.Str2Bool(opt.continue)
     opt.clear_buffers = utils.Str2Bool(opt.clear_buffers)
-    opt.colourNorm  = utils.Str2Bool(opt.colourNorm)
-    opt.colourjit   = utils.Str2Bool(opt.colourjit)
-    opt.pca         = utils.Str2Bool(opt.pca)
     opt.saveBest    = utils.Str2Bool(opt.saveBest)
     opt.reprocess = utils.Str2Bool(opt.reprocess)
     opt.demo_plot_save = utils.Str2Bool(opt.demo_plot_save)
