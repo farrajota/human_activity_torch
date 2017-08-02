@@ -66,7 +66,7 @@ local function getIterator(mode)
             return tnt.ListDataset{
                 list = torch.range(1, nIters):long(),
                 load = function(idx)
-                    local input_kps, input_feats, label = getSampleBatch(loader, opt.batchSize)
+                    local input_kps, input_feats, label = getSampleBatch(loader, opt.batchSize, mode=='train')
                     return {
                         input_kps = input_kps,
                         input_feats = input_feats,
@@ -144,7 +144,7 @@ end
 
 
 -- copy sample to GPU buffer:
-local inputs_kps, inputs_feats, targets = cast(torch.Tensor()), cast(torch.Tensor())
+local inputs, targets = cast(torch.Tensor()), cast(torch.Tensor())
 engine.hooks.onSample = function(state)
     cutorch.synchronize(); collectgarbage();
     if opt.netType:sub(1,5) == 'vgg16' then
@@ -157,7 +157,7 @@ engine.hooks.onSample = function(state)
 
     -- process images features here
     state.sample.input  = inputs
-    state.sample.target = targets
+    state.sample.target = targets:view(-1)
     timers.dataTimer:stop()
     timers.batchTimer:reset()
 end
