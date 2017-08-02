@@ -37,7 +37,7 @@ for i=1, niters do
 
     if plot_results then
         a = {}
-        for ibatch=1, opt.batchSize do 
+        for ibatch=1, opt.batchSize do
           disp.image(input[ibatch])
           print('label: ' .. label[ibatch])
         end
