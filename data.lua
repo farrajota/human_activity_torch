@@ -63,6 +63,7 @@ local function loader_ucf_sports(set_name)
             local img = image.load(img_filename, 3, 'float')
 
             local bbox = data[2]:squeeze()
+            if bbox:sum() == 0 then return nil end
             local center = torch.FloatTensor{(bbox[1]+bbox[3])/2, (bbox[2]+bbox[4])/2}
             local scale = (bbox[4]-bbox[2]) / 200 * 1.5
 
