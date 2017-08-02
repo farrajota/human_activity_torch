@@ -5,35 +5,33 @@
 require 'paths'
 require 'torch'
 require 'string'
+require 'optim'
 
 local tnt = require 'torchnet'
+local Logger = optim.Logger
 
 
 --------------------------------------------------------------------------------
 -- Load configs (data, model, criterion, optimState)
 --------------------------------------------------------------------------------
 
-print('==> (1/4) Load configurations: ')
+print('==> (1/3) Load configurations: ')
 paths.dofile('configs.lua')
 
 -- load model + criterion
-print('==> (2/4) Load/create network: ')
+print('==> (2/3) Load/create network: ')
 load_model('train')
 
--- Compute the statistics of the images
-print('==> (3/4) Computing dataset statistics (mean/std): ')
-process_mean_std()
 
 -- set local vars
 local lopt = opt
---local dataset = select_dataset_loader(opt.dataset, 'train')
 local nBatchesTrain = opt.trainIters
 local nBatchesTest = opt.testIters
 
 -- convert modules to a specified tensor type
 local function cast(x) return x:type(opt.dataType) end
 
-print('==> (4/4) Train the network on the dataset: ' .. opt.dataset)
+print('==> (3/3) Train the network on the dataset: ' .. opt.dataset)
 
 print('\n**********************')
 print('Optimizer: ' .. opt.optMethod)
@@ -52,7 +50,7 @@ local function getIterator(mode)
                     require 'torchnet'
                     opt = lopt
                     paths.dofile('data.lua')
-                    paths.dofile('transform.lua')
+                    paths.dofile('sample_batch.lua')
                     torch.manualSeed(threadid+opt.manualSeed)
                   end,
         closure = function()
@@ -68,9 +66,10 @@ local function getIterator(mode)
             return tnt.ListDataset{
                 list = torch.range(1, nIters):long(),
                 load = function(idx)
-                    local input, label = getSampleBatch(loader, opt.batchSize)
+                    local input_kps, input_feats, label = getSampleBatch(loader, opt.batchSize)
                     return {
-                        input = input,
+                        input_kps = input_kps,
+                        input_feats = input_feats,
                         target = label
                     }
                 end
@@ -84,18 +83,26 @@ end
 -- Setup torchnet engine/meters/loggers
 --------------------------------------------------------------------------------
 
+local timers = {
+   batchTimer = torch.Timer(),
+   dataTimer = torch.Timer(),
+   epochTimer = torch.Timer(),
+}
+
 local meters = {
-    train_err = tnt.AverageValueMeter(),
-    train_accu = tnt.AverageValueMeter(),
-    test_err = tnt.AverageValueMeter(),
-    test_accu = tnt.AverageValueMeter(),
+    test = tnt.AverageValueMeter(),
+    train = tnt.AverageValueMeter(),
+    train_clerr = tnt.ClassErrorMeter{topk = {1,5},accuracy=true},
+    clerr = tnt.ClassErrorMeter{topk = {1,5},accuracy=true},
+    ap = tnt.APMeter(),
 }
 
 function meters:reset()
-    self.train_err:reset()
-    self.train_accu:reset()
-    self.test_err:reset()
-    self.test_accu:reset()
+    self.test:reset()
+    self.train:reset()
+    self.train_clerr:reset()
+    self.clerr:reset()
+    self.ap:reset()
 end
 
 local loggers = {
@@ -104,7 +111,7 @@ local loggers = {
     full_train = Logger(paths.concat(opt.save,'full_train.log'), opt.continue),
 }
 
-loggers.test:setNames{'Test Loss', 'Test acc.'}
+loggers.test:setNames{'Test Loss', 'Test acc.', 'Test mAP'}
 loggers.train:setNames{'Train Loss', 'Train acc.'}
 loggers.full_train:setNames{'Train Loss', 'Train accuracy'}
 
@@ -131,40 +138,71 @@ engine.hooks.onStartEpoch = function(state)
     print(('Starting Train epoch %d/%d  %s'):format(state.epoch+1, state.maxepoch,  opt.save))
     print('**********************************************')
     state.config = optimStateFn(state.epoch+1)
-    state.network:training() -- ensure the model is set to training mode
+    state.network:training()  -- ensure the model is set to training mode
+    timers.epochTimer:reset()
 end
 
 
 -- copy sample to GPU buffer:
-local inputs, targets = cast(torch.Tensor()), cast(torch.Tensor())
+local inputs_kps, inputs_feats, targets = cast(torch.Tensor()), cast(torch.Tensor())
 engine.hooks.onSample = function(state)
     cutorch.synchronize(); collectgarbage();
-    inputs:resize(state.sample.input[1]:size() ):copy(state.sample.input[1])
-    targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
+    if opt.netType:sub(1,5) == 'vgg16' then
+        inputs:resize(state.sample.input_feats[1]:size() ):copy(state.sample.input_feats[1])
+        targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
+    else
+        inputs:resize(state.sample.inputs_kps[1]:size() ):copy(state.sample.inputs_kps[1])
+        targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
+    end
 
+    -- process images features here
     state.sample.input  = inputs
-    state.sample.target = utils.ReplicateTensor2Table(targets, opt.nOutputs)
+    state.sample.target = targets
+    timers.dataTimer:stop()
+    timers.batchTimer:reset()
+end
+
+
+engine.hooks.onForward = function(state)
+   if not state.training then
+      xlua.progress(state.t, nBatchesTest)
+   end
+end
+
+
+engine.hooks.onUpdate = function(state)
+    timers.dataTimer:reset()
+    timers.dataTimer:resume()
 end
 
 
 engine.hooks.onForwardCriterion = function(state)
     if state.training then
-        xlua.progress((state.t+1), nBatchesTrain)
+        meters.train:add(state.criterion.output)
+        meters.train_clerr:add(state.network.output,state.sample.target)
+        if opt.verbose then
+            print(string.format('epoch[%d/%d][%d/%d][batch=%d] - loss: %2.4f; top-1 err: ' ..
+                                '%2.2f; top-5 err: %2.2f; lr = %2.2e;  DataLoadingTime: %0.5f; ' ..
+                                'forward-backward time: %0.5f', state.epoch+1, state.maxepoch,
+                                state.t+1, nBatchesTrain, opt.batchSize, meters.train:value(),
+                                100-meters.train_clerr:value{k = 1}, 100-meters.train_clerr:value{k = 5},
+                                state.config.learningRate, timers.dataTimer:time().real,
+                                timers.batchTimer:time().real))
+        else
+            xlua.progress(state.t+1, nBatchesTrain)
+        end
 
-        -- compute the PCK accuracy of the networks (last) output heatmap with the ground-truth heatmap
-        local acc = accuracy(state.network.output, state.sample.target)
-
-        meters.train_err:add(state.criterion.output)
-        meters.train_accu:add(acc)
-        loggers.full_train:add{state.criterion.output, acc}
+        loggers.full_train:add{state.criterion.output}
     else
-        xlua.progress(state.t, nBatchesTest)
-
-        -- compute the PCK accuracy of the networks (last) output heatmap with the ground-truth heatmap
-        local acc = accuracy(state.network.output, state.sample.target)
-
-        meters.test_err:add(state.criterion.output)
-        meters.test_accu:add(acc)
+        meters.conf:add(state.network.output,state.sample.target)
+        meters.clerr:add(state.network.output,state.sample.target)
+        meters.test:add(state.criterion.output)
+        local tar = torch.ByteTensor(#state.network.output):fill(0)
+        for k=1,state.sample.target:size(1) do
+            local id = state.sample.target[k]:squeeze()
+            tar[k][id]=1
+        end
+        meters.ap:add(state.network.output,tar)
     end
 end
 
@@ -191,10 +229,9 @@ engine.hooks.onEndEpoch = function(state)
     -- measure test loss and error:
     ---------------------------------
 
-    print(('Train Loss: %0.5f; Acc: %0.5f'):format(meters.train_err:value(),  meters.train_accu:value()))
-    local tr_loss = meters.train_err:value()
-    local tr_accuracy = meters.train_accu:value()
-    loggers.train:add{tr_loss, tr_accuracy}
+    print("Epoch Train Loss:" ,meters.train:value(),"Total Epoch time: ",timers.epochTimer:time().real)
+    -- measure test loss and error:
+    loggers.train:add{meters.train:value(),meters.train_clerr:value()[1]}
     meters:reset()
     state.t = 0
 
@@ -212,24 +249,21 @@ engine.hooks.onEndEpoch = function(state)
             iterator  = getIterator('test'),
             criterion = criterion,
         }
-        local ts_loss = meters.test_err:value()
-        local ts_accuracy = meters.test_accu:value()
-        loggers.test:add{ts_loss, ts_accuracy}
-        print(('Test Loss: %0.5f; Acc: %0.5f'):format(meters.test_err:value(),  meters.test_accu:value()))
 
-        --[[ Save model with the best accuracy ]]--
-        if ts_accuracy > test_best_accu and opt.saveBest then
-            storeModelBest(state.network.modules[1], opt)
-            test_best_accu = ts_accuracy
-        end
+        loggers.test:add{meters.test:value(),meters.clerr:value()[1],meters.ap:value():mean()}
+        print("Test Loss" , meters.test:value())
+        print("Accuracy: Top 1%", meters.clerr:value{k = 1})
+        print("Accuracy: Top 5%", meters.clerr:value{k = 5})
+        print("mean AP:",meters.ap:value():mean())
     end
 
-    -----------------------------
+    --------------------------------
     -- save model snapshots to disk
-    -----------------------------
+    --------------------------------
 
-    storeModel(state.network.modules[1], state.config, state.epoch, opt)
+    storeModel(state.network, state.config, state.epoch, opt)
 
+    timers.epochTimer:reset()
     state.t = 0
 end
 
