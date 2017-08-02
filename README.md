@@ -35,21 +35,24 @@ luarocks install cudnn
 
 To install the dbcollection package do the following:
 
-- install the Python module.
+- install the Python module (Python>=2.7 and >=3.5).
 
 ```
 pip install dbcollection
 ```
 
-- download the lua/torch7 git repository to disk.
-```
-git clone https://github.com/dbcollection/dbcollection-torch7
-```
+- install the Lua/Torch7 dbcollection wrapper:
 
-- install the Lua package.
-```
-cd dbcollection-torch7 && luarocks make
-```
+    1. download the Lua/Torch7 git repo to disk.
+
+    ```
+    git clone https://github.com/dbcollection/dbcollection-torch7
+    ```
+
+    2. install the package.
+    ```
+    cd dbcollection-torch7 && luarocks make
+    ```
 
 > For more information about the dbcollection package see [here](https://github.com/dbcollection/dbcollection-torch7).
 
