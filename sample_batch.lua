@@ -93,6 +93,10 @@ local function fetch_single_data(data_loader, idx, is_train)
 
     local imgs, label = data_loader.loader(idx)
 
+    if not imgs then
+        return {}  -- return empty table to discard this image
+    end
+
     -- select some random transformations to apply to the entire set of images
     local params_transform = get_random_transforms(is_train)
 
@@ -103,7 +107,33 @@ local function fetch_single_data(data_loader, idx, is_train)
         table.insert(imgs_transf, new_img)
     end
 
-    return {imgs_transf, label}
+    -- Resize images (vgg16)
+    local iW, iH = torch.random(1, opt.inputRes - 224), torch.random(1, opt.inputRes - 224)
+    local imgs_resized = {}
+    for i=1, #imgs_transf do
+        local new_img = imgs_transf[i]:clone()
+        if torch.random() > 0.5 then
+            new_img = image.scale(new_img, 224, 224)
+        else
+            new_img = random_crop(new_img, 224, 224, iW, iH)
+        end
+
+        -- convert bo bgr
+        new_img = new_img:index(1, torch.LongTensor{3,2,1})  -- bgr
+
+        -- rescale pixels
+        new_img:mul(opt.params.pixel_scale)
+
+        -- normalize pixels
+        for i=1, 3 do
+            if opt.params.mean then new_img[i]:add(-opt.params.mean[i]) end
+            if opt.params.std then new_img[i]:div(opt.params.std[i]) end
+        end
+
+        table.insert(imgs_resized, new_img)
+    end
+
+    return {imgs_transf, imgs_resized, label}
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -151,24 +181,31 @@ function getSampleBatch(data_loader, batchSize, is_train)
     -- get batch data
     local sample = get_batch(data_loader, batchSize, is_train)
 
-    -- concatenate data
-    local imgs_tensor = torch.FloatTensor(batchSize, opt.seq_length,
+    -- images (for body joints)
+    local imgs_kps = torch.FloatTensor(batchSize, opt.seq_length,
                                           3, opt.inputRes, opt.inputRes):fill(0)
-
-    -- images
     for i=1, batchSize do
         for j=1, opt.seq_length do
-            imgs_tensor[i][j]:copy(sample[i][1][j])
+            imgs_kps[i][j]:copy(sample[i][1][j])
+        end
+    end
+
+    -- images (for body joints)
+    local imgs_feats = torch.FloatTensor(batchSize, opt.seq_length,
+                                          3, 224, 224):fill(0)
+    for i=1, batchSize do
+        for j=1, opt.seq_length do
+            imgs_feats[i][j]:copy(sample[i][2][j])
         end
     end
 
     -- labels
-    local labels_tensor = torch.IntTensor(batchSize):fill(0)
+    local labels_tensor = torch.IntTensor(batchSize, opt.seq_length):fill(0)
     for i=1, batchSize do
-        labels_tensor[i] = sample[i][2]
+        labels_tensor[i]:fill(sample[i][3])
     end
 
     collectgarbage()
 
-    return imgs_tensor, labels_tensor
+    return imgs_kps, imgs_feats, labels_tensor
 end
