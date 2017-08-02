@@ -27,6 +27,8 @@ function transform_data(img, params)
     -- Crop image
     local img_transf = crop2(img.img, img.center, img.scale, params.rotation, opt.inputRes)
 
+    if not img_transf then return nil end
+
     -- Flipping
     if params.flip then
         img_transf = flip(img_transf)
@@ -104,6 +106,7 @@ local function fetch_single_data(data_loader, idx, is_train)
     local imgs_transf = {}
     for i=1, #imgs do
         local new_img = transform_data(imgs[i], params_transform)
+        if not new_img then return {} end  -- skip this round of data/transforms if any error occurs
         table.insert(imgs_transf, new_img)
     end
 
