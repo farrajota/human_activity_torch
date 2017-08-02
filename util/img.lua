@@ -116,6 +116,7 @@ function crop2(img, center, scale, rot, res)
     local newImg = torch.zeros(img:size(1), br[2] - ul[2], br[1] - ul[1])
     if not pcall(function() newImg:sub(unpack(new_)):copy(tmpImg:sub(unpack(old_))) end) then
        print("Error occurred during crop!")
+       return nil
     end
 
     if rot ~= 0 then
