@@ -19,14 +19,14 @@ if opt.continue or opt.branch ~= 'none' then
     end
 
     print('==> Loading model from: ' .. prevModel)
-    model = torch.load(prevModel)
+    model, opt.params = unpack(torch.load(prevModel))
     opt.iniEpoch = epoch
 
 -- Or a path to previously trained model is provided
 elseif opt.loadModel ~= 'none' then
     assert(paths.filep(opt.loadModel), 'File not found: ' .. opt.loadModel)
     print('==> Loading model from: ' .. opt.loadModel)
-    model = torch.load(opt.loadModel)
+    model, opt.params = unpack(torch.load(opt.loadModel))
 
 -- Or we're starting fresh
 else
@@ -34,7 +34,7 @@ else
     -- load models
     local models_list = paths.dofile('models/init.lua')
     assert(models_list[opt.netType], 'Undefined model architecture: ' .. opt.netType)
-    model = models_list[opt.netType]()
+    model, opt.params = models_list[opt.netType]()
 end
 
 
