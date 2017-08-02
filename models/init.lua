@@ -2,11 +2,14 @@
     List of available models to load.
 ]]
 
+require 'nn'
 
-local model_list = {}
+if not nn.NoBackprop then paths.dofile('modules/NoBackprop.lua') end
 
-model_list['rnn']     = paths.dofile('rnn.lua')  -- SML net
-model_list['lstm']    = paths.dofile('lstm.lua')  -- SML net
-model_list['convnet'] = paths.dofile('convnet.lua')  -- SML net
+local network_list = {}
 
-return model_list
+network_list['vgg16-lstm'] = paths.dofile('vgg16_lstm.lua')
+network_list['vgg16-lstm2'] = paths.dofile('vgg16_lstm2.lua')
+network_list['vgg16-convnet'] = paths.dofile('vgg16_convnet.lua')
+
+return network_list
