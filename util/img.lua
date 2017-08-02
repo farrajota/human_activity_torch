@@ -130,6 +130,11 @@ function crop2(img, center, scale, rot, res)
 end
 
 
+function random_crop(img, width, height, iW, iH)
+    return img[{{}, {iW, iW+width -1}, {iH, iH + height -1}}]
+end
+
+
 -------------------------------------------------------------------------------
 -- Flipping functions
 -------------------------------------------------------------------------------
