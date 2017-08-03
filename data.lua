@@ -64,8 +64,11 @@ local function loader_ucf_sports(set_name)
 
             local bbox = data[2]:squeeze()
             if bbox:sum() == 0 then return nil end
+            if bbox[4]-bbox[2] < 20 then return nil end
             local center = torch.FloatTensor{(bbox[1]+bbox[3])/2, (bbox[2]+bbox[4])/2}
             local scale = (bbox[4]-bbox[2]) / 200 * 1.5
+
+            if scale < 0 then return nil end
 
             table.insert(imgs, {img = img,
                                 center = center,
