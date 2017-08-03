@@ -4,11 +4,6 @@
 
 Recognize human activities of individuals using body pose joint annotations on video sequences.
 
-This work splits human activity recognition into three stages:
-
-1. Detect persons/pedestrians using a [modified Fast R-CNN network](https://github.com/farrajota/pedestrian_detector_torch).
-2. Detect human body joints using a [stacked auto-encoder network](https://github.com/farrajota/human_pose_estimation_torch) ([modified hourglass](https://github.com/anewell/pose-hg-train)).
-3. Use a RNN to classify activities.
 
 # WARNING
 
