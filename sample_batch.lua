@@ -49,11 +49,12 @@ end
 -------------------------------------------------------------------------------
 
 local function get_random_transforms(is_train)
-    assert(is_train)
+    assert(is_train ~= nil)
+    assert(type(is_train) == 'boolean')
 
     local rot = 0
     local scale = 1
-    local color_jit = {brightness = 1, contrast = 1, saturation = 1}
+    local color_jit = {1, 1, 1}
     local flip = false
 
     if is_train then
@@ -91,7 +92,8 @@ end
 local function fetch_single_data(data_loader, idx, is_train)
     assert(data_loader)
     assert(idx)
-    assert(is_train)
+    assert(is_train ~= nil)
+    assert(type(is_train) == 'boolean')
 
     local imgs, label = data_loader.loader(idx)
 
@@ -145,7 +147,8 @@ end
 local function get_batch(data_loader, batchSize, is_train)
     assert(data_loader)
     assert(batchSize)
-    assert(is_train)
+    assert(is_train ~= nil)
+    assert(type(is_train) == 'boolean')
 
     local size = data_loader.size
     local max_attempts = 30
@@ -179,7 +182,8 @@ end
 function getSampleBatch(data_loader, batchSize, is_train)
     assert(data_loader)
     assert(batchSize)
-    assert(is_train)
+    assert(is_train ~= nil)
+    assert(type(is_train) == 'boolean')
 
     -- get batch data
     local sample = get_batch(data_loader, batchSize, is_train)
