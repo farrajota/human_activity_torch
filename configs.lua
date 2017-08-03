@@ -19,9 +19,8 @@ torch.setdefaulttensortype('torch.FloatTensor')
 
 paths.dofile('projectdir.lua') -- Project directory
 paths.dofile('data.lua')
-
 paths.dofile('models/modules/NoBackprop.lua')
-
+paths.dofile('util/store.lua')
 utils = paths.dofile('util/utils.lua')
 
 
