@@ -194,12 +194,11 @@ engine.hooks.onForwardCriterion = function(state)
 
         loggers.full_train:add{state.criterion.output}
     else
-        meters.conf:add(state.network.output,state.sample.target)
         meters.clerr:add(state.network.output,state.sample.target)
         meters.test:add(state.criterion.output)
         local tar = torch.ByteTensor(#state.network.output):fill(0)
         for k=1,state.sample.target:size(1) do
-            local id = state.sample.target[k]:squeeze()
+            local id = state.sample.target[k]
             tar[k][id]=1
         end
         meters.ap:add(state.network.output,tar)
@@ -252,8 +251,8 @@ engine.hooks.onEndEpoch = function(state)
 
         loggers.test:add{meters.test:value(),meters.clerr:value()[1],meters.ap:value():mean()}
         print("Test Loss" , meters.test:value())
-        print("Accuracy: Top 1%", meters.clerr:value{k = 1})
-        print("Accuracy: Top 5%", meters.clerr:value{k = 5})
+        print("Accuracy: Top 1%", meters.clerr:value{k = 1} .. '%')
+        print("Accuracy: Top 5%", meters.clerr:value{k = 5} .. '%')
         print("mean AP:",meters.ap:value():mean())
     end
 
