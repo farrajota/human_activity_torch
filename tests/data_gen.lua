@@ -21,16 +21,17 @@ opt.rotate = 15
 opt.scale = 0.2
 opt.rotRate = 0.5
 opt.batchSize = 2
-niters = 4
+niters = 1000
 mode = 'train'
-plot_results = true
+plot_results = false
+opt.params = torch.load('./data/pretrained_models/parameters_vgg16.t7')
 
 local data_loader = select_dataset_loader(opt.dataset, mode)
 local loader = data_loader[mode]
 
 for i=1, niters do
     print(('Iter %d/%d'):format(i, niters))
-    if i==6 then
+    if i==183 then
         a=1  -- stop debugger here
     end
     local input, label = getSampleBatch(loader, opt.batchSize, true)
@@ -42,6 +43,14 @@ for i=1, niters do
           print('label: ' .. label[ibatch])
         end
     end
+end
+
+for i=1, niters do
+    print(('Iter %d/%d'):format(i, niters))
+    if i==183 then
+        a=1  -- stop debugger here
+    end
+    local input, label = getSampleBatch(loader, opt.batchSize, false)
 end
 
 print('Data fetching successfully finished.')
