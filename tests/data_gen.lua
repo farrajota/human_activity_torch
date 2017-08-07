@@ -4,6 +4,7 @@
 
 require 'torch'
 require 'paths'
+require 'xlua'
 disp = require 'display'
 
 torch.manualSeed(4)
@@ -29,8 +30,9 @@ opt.params = torch.load('./data/pretrained_models/parameters_vgg16.t7')
 local data_loader = select_dataset_loader(opt.dataset, mode)
 local loader = data_loader[mode]
 
+print('Train data samples')
 for i=1, niters do
-    print(('Iter %d/%d'):format(i, niters))
+    --print(('Iter %d/%d'):format(i, niters))
     if i==183 then
         a=1  -- stop debugger here
     end
@@ -43,14 +45,17 @@ for i=1, niters do
           print('label: ' .. label[ibatch])
         end
     end
+    xlua.progress(i, niters)
 end
 
+print('Test data samples')
 for i=1, niters do
-    print(('Iter %d/%d'):format(i, niters))
+    --print(('Iter %d/%d'):format(i, niters))
     if i==183 then
         a=1  -- stop debugger here
     end
     local input, label = getSampleBatch(loader, opt.batchSize, false)
+    xlua.progress(i, niters)
 end
 
 print('Data fetching successfully finished.')
