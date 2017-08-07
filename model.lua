@@ -8,7 +8,7 @@
 --------------------------------------------------------------------------------
 
 -- Continuing an experiment where it left off
-local model
+local features_net, kps_net, classifier_net,
 opt.iniEpoch = 1
 if opt.continue or opt.branch ~= 'none' then
     local prevModel
@@ -19,14 +19,14 @@ if opt.continue or opt.branch ~= 'none' then
     end
 
     print('==> Loading model from: ' .. prevModel)
-    model, opt.params = unpack(torch.load(prevModel))
+    features_net, kps_net, classifier_net, opt.params = unpack(torch.load(prevModel))
     opt.iniEpoch = epoch
 
 -- Or a path to previously trained model is provided
 elseif opt.loadModel ~= 'none' then
     assert(paths.filep(opt.loadModel), 'File not found: ' .. opt.loadModel)
     print('==> Loading model from: ' .. opt.loadModel)
-    model, opt.params = unpack(torch.load(opt.loadModel))
+    features_net, kps_net, classifier_net, opt.params = unpack(torch.load(opt.loadModel))
 
 -- Or we're starting fresh
 else
@@ -34,7 +34,7 @@ else
     -- load models
     local models_list = paths.dofile('models/init.lua')
     assert(models_list[opt.netType], 'Undefined model architecture: ' .. opt.netType)
-    model, opt.params = models_list[opt.netType]()
+    features_net, kps_net, classifier_net, opt.params = models_list[opt.netType]()
 end
 
 
@@ -50,7 +50,9 @@ local criterion = nn.CrossEntropyCriterion()
 --------------------------------------------------------------------------------
 
 print('Running on GPU: [' .. opt.nGPU .. ']')
-model:cuda()
+if features_net then features_net:cuda() end
+if kps_net then kps_net:cuda() end
+classifier_net:cuda()
 criterion:cuda()
 opt.dataType = 'torch.CudaTensor'
 
@@ -62,19 +64,17 @@ opt.dataType = 'torch.CudaTensor'
 -- Use multiple gpus
 if opt.GPU >= 1 and opt.nGPU > 1 then
     if torch.type(model) == 'nn.DataParallelTable' then
-        model.features = utils.loadDataParallel(model, opt.nGPU)
+        if features_net then features_net = utils.loadDataParallel(features_net, opt.nGPU) end
+        if kps_net then kps_net = utils.loadDataParallel(kps_net, opt.nGPU) end
     else
-        model.features = utils.makeDataParallelTable(model, opt.nGPU)
+        if features_net then features_net = utils.makeDataParallelTable(features_net, opt.nGPU) end
+        if kps_net then kps_net = utils.makeDataParallelTable(kps_net, opt.nGPU) end
     end
 end
-
-local function cast(x) return x:type(opt.data_type) end
-
-cast(model)
 
 
 --------------------------------------------------------------------------------
 -- Output
 --------------------------------------------------------------------------------
 
-return model, criterion
+return features_net, kps_net, classifier_net, criterion
