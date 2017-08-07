@@ -88,6 +88,19 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
+local function get_center_crop_bbox(img)
+    local width, height = img:size(3), img:size(2)
+    local pad = math.abs((width - height)/2)
+    if width >= height then
+        return torch.FloatTensor({pad, 1, pad+height -1, height})
+    else
+        return torch.FloatTensor({1, pad, width, pad+width -1})
+    end
+end
+
+------------------------------------------------------------------------------------------------------------
+
+
 --[[ Fetch data (images + label) from a single video ]]--
 local function fetch_single_data(data_loader, idx, is_train)
     assert(data_loader)
@@ -97,19 +110,40 @@ local function fetch_single_data(data_loader, idx, is_train)
 
     local imgs, label = data_loader.loader(idx)
 
-    if not imgs then
-        return {}  -- return empty table to discard this image
-    end
-
     -- select some random transformations to apply to the entire set of images
     local params_transform = get_random_transforms(is_train)
 
     -- apply transforms to all images
     local imgs_transf = {}
+    local prev_center, prev_scale = imgs[1].center, imgs[1].scale
+    local prev_bbox = imgs[1].bbox
+    if prev_bbox:sum() == 0 or prev_bbox[4]-prev_bbox[2] < 20 then
+        prev_bbox = get_center_crop_bbox(imgs[1].img)
+        prev_center = torch.FloatTensor({(prev_bbox[1] + prev_bbox[3])/2,
+                                         (prev_bbox[2] + prev_bbox[4])/2})
+        prev_scale = (prev_bbox[4]-prev_bbox[2]) / 200 * 1.5
+    end
     for i=1, #imgs do
+        local img = imgs[i].img
+        local scale = imgs[i].scale
+        local center = imgs[i].center
+        local bbox = imgs[i].bbox
+
+        if scale < 0 or bbox:sum() == 0 or bbox[4]-bbox[2] < 20 then
+            imgs[i].bbox = prev_bbox
+            imgs[i].center = prev_center
+            imgs[i].scale = prev_scale
+        end
+
         local new_img = transform_data(imgs[i], params_transform)
         if not new_img then return {} end  -- skip this round of data/transforms if any error occurs
         table.insert(imgs_transf, new_img)
+
+        if not (scale < 0 or bbox:sum() == 0 or bbox[4]-bbox[2] < 20) then
+            prev_bbox = bbox
+            prev_center = center
+            prev_scale = scale
+        end
     end
 
     -- Resize images (vgg16)
