@@ -147,16 +147,49 @@ end
 local inputs, targets = cast(torch.Tensor()), cast(torch.Tensor())
 engine.hooks.onSample = function(state)
     cutorch.synchronize(); collectgarbage();
-    if opt.netType:sub(1,5) == 'vgg16' then
-        inputs:resize(state.sample.input_feats[1]:size() ):copy(state.sample.input_feats[1])
-        targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
-    else
-        inputs:resize(state.sample.inputs_kps[1]:size() ):copy(state.sample.inputs_kps[1])
-        targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
+
+    local num_batches = state.sample.input_feats[1]:size(1)
+    local num_imgs_seq = state.sample.input_feats[1]:size(2)
+
+    -- process images features
+    local inputs_features = {}
+    if model_features then
+        local batch_feats_imgs = {}
+        for ibatch=1, num_batches do
+            for i=1, num_imgs do
+                local img =  state.sample.input_feats[1][ibatch][i]
+                local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
+                local features = model_features:forward(img_cuda)
+                table.insert(batch_feats_imgs, features)
+            end
+            -- convert table into a single tensor
+            table.insert(inputs_features, nn.JoinTable(1):cuda():forward(batch_feats_imgs))
+        end
+        -- convert table into a single tensor
+        inputs_features = nn.JoinTable(1):cuda():forward(inputs_features)
     end
 
-    -- process images features here
-    state.sample.input  = inputs
+    -- process images body joints
+    local inputs_kps = {}
+    if model_kps then
+        local batch_kps_imgs = {}
+        for ibatch=1, num_batches do
+            for i=1, num_imgs do
+                local img =  state.sample.input_kps[1][ibatch][i]
+                local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
+                local kps = model_kps:forward(img_cuda)
+                table.insert(batch_kps_imgs, kps)
+            end
+            -- convert table into a single tensor
+            table.insert(inputs_kps, nn.JoinTable(1):cuda():forward(batch_kps_imgs))
+        end
+        -- convert table into a single tensor
+        inputs_kps = nn.JoinTable(1):cuda():forward(inputs_kps)
+    end
+
+    targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
+
+    state.sample.input  = {inputs_features, inputs_kps}
     state.sample.target = targets:view(-1)
     timers.dataTimer:stop()
     timers.batchTimer:reset()
@@ -275,7 +308,7 @@ end
 
 print('==> Train network model')
 engine:train{
-    network   = model,
+    network   = model_classifier,
     iterator  = getIterator('train'),
     criterion = criterion,
     optimMethod = optim[opt.optMethod],
