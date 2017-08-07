@@ -159,32 +159,42 @@ function load_model(mode)
     local str = string.lower(mode)
     if str == 'train' then
         -- Load model
-        model, criterion = paths.dofile('model.lua')
+        model_features, model_kps, model_classifier, criterion = paths.dofile('model.lua')
 
-        model:training()
+        if model_features then model_features:evaluate() end
+        if model_kps then model_kps:evaluate() end
+        model_classifier:training()
     elseif str == 'test' then
         -- load model
-        model = torch.load(opt.load)
+        model_features, model_kps, model_classifier = unpack(torch.load(opt.load))
 
         if opt.GPU >= 1 then
             opt.dataType = 'torch.CudaTensor'  -- Use GPU
-            model:cuda()
+            if model_features then model_features:cuda() end
+            if model_kps then model_kps:cuda() end
+            model_classifier:cuda()
 
             -- convert to cuda
             if pcall(require, 'cudnn') then
-                print('Converting model backend to cudnn...')
-                cudnn.convert(model, cudnn):cuda()
+                print('Converting model features+classifier backend to cudnn...')
+                if model_features then cudnn.convert(model_features, cudnn):cuda() end
+                if model_kps then cudnn.convert(model_kps, cudnn):cuda() end
+                cudnn.convert(model_classifier, cudnn):cuda()
                 print('Done.')
             end
 
-            model = utils.loadDataParallel(model, 1) -- load model into 1 GPU
-            model:cuda()
+            if model_features then model_features = utils.loadDataParallel(model_features, 1) end  -- load model into 1 GPU
+            if model_kps then model_kps = utils.loadDataParallel(model_kps, 1) end  -- load model into 1 GPU
+            model_features:cuda()
         else
-            opt.dataType = 'torch.FloatTensor' -- Use CPU
-            model:float()
+            error('Undefined behaviour for non-GPU/cuda models.')
+            --opt.dataType = 'torch.FloatTensor' -- Use CPU
+            --model_classifier:float()
         end
 
-        model:evaluate()
+        if model_features then model_features:evaluate() end
+        if model_kps then model_kps:evaluate() end
+        model_classifier:evaluate()
     else
         error(('Invalid mode: %s. mode must be either \'train\' or \'test\''):format(mode))
     end
