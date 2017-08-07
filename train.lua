@@ -229,6 +229,8 @@ engine.hooks.onEndEpoch = function(state)
     ---------------------------------
 
     print("Epoch Train Loss:" ,meters.train:value(),"Total Epoch time: ",timers.epochTimer:time().real)
+    print("Accuracy: Top 1%", meters.train_clerr:value{k = 1} .. '%')
+    print("Accuracy: Top 5%", meters.train_clerr:value{k = 5} .. '%')
     -- measure test loss and error:
     loggers.train:add{meters.train:value(),meters.train_clerr:value()[1]}
     meters:reset()
