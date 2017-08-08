@@ -278,22 +278,22 @@ function getSampleTest(data_loader, idx)
 
     -- get batch data
     local sample = fetch_single_data(data_loader, idx, false, false)
-    local seq_length = #sample
+    local seq_length = #sample[1]
 
     -- images (for body joints)
     local imgs_kps = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0)
     for j=1, seq_length do
-        imgs_kps[i][j]:copy(sample[i][1][j])
+        imgs_kps[1][j]:copy(sample[1][j])
     end
 
     -- images (for body joints)
     local imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0)
-    for j=1, opt.seq_length do
-        imgs_feats[i][j]:copy(sample[i][2][j])
+    for j=1, seq_length do
+        imgs_feats[1][j]:copy(sample[2][j])
     end
 
     -- labels
-    local labels_tensor = torch.IntTensor(1, seq_length):fill(sample[1][3])
+    local labels_tensor = torch.IntTensor(1, seq_length):fill(sample[3])
 
     collectgarbage()
 
