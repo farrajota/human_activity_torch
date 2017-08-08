@@ -8,8 +8,10 @@
 require 'paths'
 require 'torch'
 require 'string'
+require 'optim'
 
 local tnt = require 'torchnet'
+local Logger = optim.Logger
 
 
 --------------------------------------------------------------------------------
@@ -75,7 +77,6 @@ end
 --------------------------------------------------------------------------------
 
 local timers = {
-   dataTimer = torch.Timer(),
    featTimer = torch.Timer(),
    clsTimer = torch.Timer(),
    totalTimer = torch.Timer(),
@@ -92,10 +93,10 @@ function meters:reset()
 end
 
 local loggers = {
-    test = Logger(paths.concat(opt.save,'test.log'), opt.continue)
+    test = Logger(paths.concat(opt.save,'Evaluation_full.log'), opt.continue)
 }
 
-loggers.test:setNames{'Test Loss', 'Test Top-1 Error', 'Test Top-5 Error', 'Average Precision'}
+loggers.test:setNames{'Top-1 accuracy (%)', 'Top-5 accuracy (%)', 'Average Precision'}
 loggers.test.showPlot = false
 
 -- set up training engine:
@@ -109,19 +110,18 @@ end
 
 
 -- copy sample to GPU buffer:
-local inputs = cast(torch.Tensor())
+local inputs, targets = cast(torch.Tensor()), cast(torch.Tensor())
 engine.hooks.onSample = function(state)
     cutorch.synchronize(); collectgarbage();
 
-    timers.dataTimer:stop()
     timers.featTimer:reset()
 
-    local num_imgs_seq = state.sample.input_feats[1]:size(1)
+    local num_imgs_seq = state.sample.input_feats[1]:size(2)
 
     -- process images features
     local inputs_features = {}
     if model_features then
-        for i=1, num_imgs do
+        for i=1, num_imgs_seq do
             local img =  state.sample.input_feats[1][1][i]
             local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
             local features = model_features:forward(img_cuda)
@@ -129,12 +129,13 @@ engine.hooks.onSample = function(state)
         end
         -- convert table into a single tensor
         inputs_features = nn.JoinTable(1):cuda():forward(inputs_features)
+        inputs_features = inputs_features:view(1, num_imgs_seq, -1)
     end
 
     -- process images body joints
     local inputs_kps = {}
     if model_kps then
-        for i=1, num_imgs do
+        for i=1, num_imgs_seq do
             local img =  state.sample.input_kps[1][1][i]
             local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
             local kps = model_kps:forward(img_cuda)
@@ -142,15 +143,16 @@ engine.hooks.onSample = function(state)
         end
         -- convert table into a single tensor
         inputs_kps = nn.JoinTable(1):cuda():forward(inputs_kps)
+        inputs_kps = nn.Unsqueeze(1):cuda():forward(inputs_kps)
     end
 
     targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
 
-    if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'kps') then
+    if model_features and model_kps then
         state.sample.input = {inputs_features, inputs_kps}
-    elseif string.find(opt.netType, 'vgg16') then
+    elseif model_features then
         state.sample.input = inputs_features
-    elseif string.find(opt.netType, 'kps') then
+    elseif model_kps then
         state.sample.input = inputs_kps
     else
         error('Invalid network type: ' .. opt.netType)
@@ -166,10 +168,9 @@ engine.hooks.onForward= function(state)
     if opt.test_progressbar then
         xlua.progress(state.t, nSamples)
     else
-        print(('test: %5d/%-5d DataLoading time: %0.3fs, ' ..
-                'feat forward time: %.3fs, cls forward time: %.3fs, ' ..
-                'total time: %0.3fs'):format(state.t+1, nSamples,
-                timers.dataTimer:time().real,
+        print(('test: %5d/%-5d ' ..
+                'features forward time: %.3fs, classifier forward time: %.3fs, ' ..
+                'total time: %0.3fs'):format(state.t, nSamples,
                 timers.featTimer:time().real,
                 timers.clsTimer:time().real,
                 timers.totalTimer:time().real))
@@ -184,15 +185,14 @@ engine.hooks.onForward= function(state)
     meters.ap:add(state.network.output,tar)
 
     collectgarbage()
-end
 
-engine.hooks.onUpdate = function(state)
-    timers.dataTimer:reset()
-    timers.dataTimer:resume()
+    timers.featTimer:resume()
     timers.totalTimer:reset()
 end
 
+
 engine.hooks.onEnd= function(state)
+    loggers.test:add{meters.clerr:value{k = 1}, meters.clerr:value{k = 5},meters.ap:value():mean()}
     print("\nEvaluation complete!")
     print("Accuracy: Top 1%", meters.clerr:value{k = 1} .. '%')
     print("Accuracy: Top 5%", meters.clerr:value{k = 5} .. '%')
