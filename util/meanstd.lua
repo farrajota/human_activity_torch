@@ -71,3 +71,27 @@ function ComputeMeanStd(loader)
     print('Time to estimate:', tm:time().real)
     return cache
 end
+
+------------------------------------------------------------------------------------------------------------
+
+function process_mean_std()
+    if opt.colourNorm then
+        print('Loading mean/std normalization values... ')
+        local fname_meanstd = paths.concat(opt.expDir, 'meanstd_cache.t7')
+
+        if paths.filep(fname_meanstd) then
+            -- load mean/std from disk
+            print('Loading mean/std cache from disk: ' .. fname_meanstd)
+            opt.meanstd = torch.load(fname_meanstd, meanstd)
+        else
+            -- compute mean/std
+            local data_loader = select_dataset_loader(opt.dataset, 'train')
+            print('mean/std cache file not found. Computing mean/std for the ' .. opt.dataset ..' dataset:')
+            local meanstd = ComputeMeanStd(data_loader.train)
+            print('Saving mean/std cache to disk: ' .. fname_meanstd)
+            torch.save(fname_meanstd, meanstd)
+            opt.meanstd = meanstd
+        end
+        --print(opt.meanstd)
+    end
+end
