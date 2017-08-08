@@ -21,6 +21,7 @@ paths.dofile('projectdir.lua') -- Project directory
 paths.dofile('data.lua')
 paths.dofile('models/modules/NoBackprop.lua')
 paths.dofile('util/store.lua')
+paths.dofile('util/meanstd.lua')
 utils = paths.dofile('util/utils.lua')
 
 
@@ -141,14 +142,18 @@ if not opt then
     torch.save(opt.save .. '/options.t7', opt)
 end
 
+
 --------------------------------------------------------------------------------
 -- Number of activities
 --------------------------------------------------------------------------------
 
 -- setup data loader
 local data_loader = select_dataset_loader(opt.dataset)
-local loader = data_loader['train']
+local loader = data_loader['test']
+opt.test_num_videos = loader.num_videos
+loader = data_loader['train']
 opt.num_activities = loader.num_activities
+opt.num_videos = loader.num_videos
 
 
 -----------------------------------------------------------
@@ -197,29 +202,5 @@ function load_model(mode)
         model_classifier:evaluate()
     else
         error(('Invalid mode: %s. mode must be either \'train\' or \'test\''):format(mode))
-    end
-end
-
-------------------------------------------------------------------------------------------------------------
-
-function process_mean_std()
-    if opt.colourNorm then
-        print('Loading mean/std normalization values... ')
-        local fname_meanstd = paths.concat(opt.expDir, 'meanstd_cache.t7')
-
-        if paths.filep(fname_meanstd) then
-            -- load mean/std from disk
-            print('Loading mean/std cache from disk: ' .. fname_meanstd)
-            opt.meanstd = torch.load(fname_meanstd, meanstd)
-        else
-            -- compute mean/std
-            local data_loader = select_dataset_loader(opt.dataset, 'train')
-            print('mean/std cache file not found. Computing mean/std for the ' .. opt.dataset ..' dataset:')
-            local meanstd = ComputeMeanStd(data_loader.train)
-            print('Saving mean/std cache to disk: ' .. fname_meanstd)
-            torch.save(fname_meanstd, meanstd)
-            opt.meanstd = meanstd
-        end
-        --print(opt.meanstd)
     end
 end
