@@ -156,17 +156,19 @@ engine.hooks.onSample = function(state)
     if model_features then
         local batch_feats_imgs = {}
         for ibatch=1, num_batches do
-            for i=1, num_imgs do
+            local seq_feats = {}
+            for i=1, num_imgs_seq do
                 local img =  state.sample.input_feats[1][ibatch][i]
                 local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
                 local features = model_features:forward(img_cuda)
-                table.insert(batch_feats_imgs, features)
+                table.insert(seq_feats, features)
             end
             -- convert table into a single tensor
-            table.insert(inputs_features, nn.JoinTable(1):cuda():forward(batch_feats_imgs))
+            table.insert(batch_feats_imgs, nn.JoinTable(1):cuda():forward(seq_feats))
         end
         -- convert table into a single tensor
-        inputs_features = nn.JoinTable(1):cuda():forward(inputs_features)
+        inputs_features = nn.JoinTable(1):cuda():forward(batch_feats_imgs)
+        inputs_features = inputs_features:view(num_batches, num_imgs_seq, -1)
     end
 
     -- process images body joints
@@ -174,23 +176,36 @@ engine.hooks.onSample = function(state)
     if model_kps then
         local batch_kps_imgs = {}
         for ibatch=1, num_batches do
-            for i=1, num_imgs do
+            local seq_kps = {}
+            for i=1, num_imgs_seq do
                 local img =  state.sample.input_kps[1][ibatch][i]
                 local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
                 local kps = model_kps:forward(img_cuda)
-                table.insert(batch_kps_imgs, kps)
+                table.insert(seq_kps, kps)
             end
             -- convert table into a single tensor
-            table.insert(inputs_kps, nn.JoinTable(1):cuda():forward(batch_kps_imgs))
+            table.insert(batch_kps_imgs, nn.JoinTable(1):cuda():forward(seq_kps))
         end
         -- convert table into a single tensor
-        inputs_kps = nn.JoinTable(1):cuda():forward(inputs_kps)
+        inputs_kps = torch.CudaTensor(num_batches, unpack(batch_kps_imgs[1]:size():totable()))
+        for ibatch=1, num_batches do
+            inputs_kps[ibatch]:copy(batch_kps_imgs[i])
+        end
     end
 
     targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
 
-    state.sample.input  = {inputs_features, inputs_kps}
+    if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'kps') then
+        state.sample.input = {inputs_features, inputs_kps}
+    elseif string.find(opt.netType, 'vgg16') then
+        state.sample.input = inputs_features
+    elseif string.find(opt.netType, 'kps') then
+        state.sample.input = inputs_kps
+    else
+        error('Invalid network type: ' .. opt.netType)
+    end
     state.sample.target = targets:view(-1)
+
     timers.dataTimer:stop()
     timers.batchTimer:reset()
 end
@@ -280,7 +295,7 @@ engine.hooks.onEndEpoch = function(state)
         print(('Test network (epoch = %d/%d)'):format(state.epoch, state.maxepoch))
         print('**********************************************')
         engine:test{
-            network   = model,
+            network   = model_classifier,
             iterator  = getIterator('test'),
             criterion = criterion,
         }
@@ -297,15 +312,15 @@ engine.hooks.onEndEpoch = function(state)
     -- save model snapshots to disk
     --------------------------------
 
-    storeModel(state.network, state.config, state.epoch, opt)
+    storeModel(model_features, model_kps, state.network, state.config, state.epoch, opt)
 
     ------------------------------------
     -- save best accuracy model to disk
     ------------------------------------
 
-    if accuracy_top1 > test_best_accu then
+    if accuracy_top1 > test_best_accu and opt.saveBest then
         test_best_accu = accuracy_top1
-        storeModelBest(state.network, opt)
+        storeModelBest(model_features, model_kps, state.network, opt)
     end
 
     timers.epochTimer:reset()
