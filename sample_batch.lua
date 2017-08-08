@@ -100,20 +100,37 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
+local function fetch_subset_images(imgs, seq_length)
+    local out_imgs = {}
+    local idx_ini = math.random(1, #imgs - opt.seq_length) - 1  -- select a subset of images from the video
+    for i=1, seq_length do
+        table.insert(out_imgs, imgs[idx_ini + i])
+    end
+    return out_imgs
+end
+
+------------------------------------------------------------------------------------------------------------
 
 --[[ Fetch data (images + label) from a single video ]]--
-local function fetch_single_data(data_loader, idx, is_train)
+local function fetch_single_data(data_loader, idx, is_train, use_subset)
     assert(data_loader)
     assert(idx)
     assert(is_train ~= nil)
     assert(type(is_train) == 'boolean')
+    assert(use_subset ~= nil)
 
+    -- get images + label from a video
     local imgs, label = data_loader.loader(idx)
+
+    -- select a subset of images from the video
+    if use_subset then
+        imgs = fetch_subset_images(imgs, opt.seq_length)
+    end
 
     -- select some random transformations to apply to the entire set of images
     local params_transform = get_random_transforms(is_train)
 
-    -- apply transforms to all images
+
     local imgs_transf = {}
     local prev_center, prev_scale = imgs[1].center, imgs[1].scale
     local prev_bbox = imgs[1].bbox
@@ -194,7 +211,7 @@ local function get_batch(data_loader, batchSize, is_train)
         while not next(data) do
             local idx = torch.random(1, size)
             if not idxUsed[idx] then
-                data = fetch_single_data(data_loader, idx, is_train)
+                data = fetch_single_data(data_loader, idx, is_train, true)
                 idxUsed[idx] = 1
 
                 -- increment attempts counter. This avoids infinite loops
@@ -213,6 +230,7 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
+--[[ Returns a batch of image sequences (used for training). ]]--
 function getSampleBatch(data_loader, batchSize, is_train)
     assert(data_loader)
     assert(batchSize)
@@ -245,6 +263,37 @@ function getSampleBatch(data_loader, batchSize, is_train)
     for i=1, batchSize do
         labels_tensor[i]:fill(sample[i][3])
     end
+
+    collectgarbage()
+
+    return imgs_kps, imgs_feats, labels_tensor
+end
+
+
+------------------------------------------------------------------------------------------------------------
+
+--[[ Returns a full sequence of images from a video (used for testing). ]]--
+function getSampleTest(data_loader, idx)
+    assert(data_loader)
+
+    -- get batch data
+    local sample = fetch_single_data(data_loader, idx, false, false)
+    local seq_length = #sample
+
+    -- images (for body joints)
+    local imgs_kps = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0)
+    for j=1, seq_length do
+        imgs_kps[i][j]:copy(sample[i][1][j])
+    end
+
+    -- images (for body joints)
+    local imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0)
+    for j=1, opt.seq_length do
+        imgs_feats[i][j]:copy(sample[i][2][j])
+    end
+
+    -- labels
+    local labels_tensor = torch.IntTensor(1, seq_length):fill(sample[1][3])
 
     collectgarbage()
 
