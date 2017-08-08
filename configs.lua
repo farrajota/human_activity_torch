@@ -171,7 +171,8 @@ function load_model(mode)
         model_classifier:training()
     elseif str == 'test' then
         -- load model
-        model_features, model_kps, model_classifier = unpack(torch.load(opt.load))
+        print('Loading models from file: ' .. opt.load)
+        model_features, model_kps, model_classifier, opt.params = unpack(torch.load(opt.load))
 
         if opt.GPU >= 1 then
             opt.dataType = 'torch.CudaTensor'  -- Use GPU
@@ -188,9 +189,16 @@ function load_model(mode)
                 print('Done.')
             end
 
-            if model_features then model_features = utils.loadDataParallel(model_features, 1) end  -- load model into 1 GPU
-            if model_kps then model_kps = utils.loadDataParallel(model_kps, 1) end  -- load model into 1 GPU
-            model_features:cuda()
+            if model_features then
+                if torch.type(model_features) == 'nn.DataParallelTable' then
+                    model_features = utils.loadDataParallel(model_features, 1)
+                end  -- load model into 1 GPU
+            end
+            if model_kps then
+                if torch.type(model_features) == 'nn.DataParallelTable' then
+                    model_kps = utils.loadDataParallel(model_kps, 1)
+                end  -- load model into 1 GPU
+            end
         else
             error('Undefined behaviour for non-GPU/cuda models.')
             --opt.dataType = 'torch.FloatTensor' -- Use CPU
