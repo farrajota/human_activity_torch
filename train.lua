@@ -274,6 +274,7 @@ engine.hooks.onEndEpoch = function(state)
     -- test the network
     ---------------------
 
+    local accuracy_top1
     if nBatchesTest > 0 then
         print('\n**********************************************')
         print(('Test network (epoch = %d/%d)'):format(state.epoch, state.maxepoch))
@@ -289,6 +290,7 @@ engine.hooks.onEndEpoch = function(state)
         print("Accuracy: Top 1%", meters.clerr:value{k = 1} .. '%')
         print("Accuracy: Top 5%", meters.clerr:value{k = 5} .. '%')
         print("mean AP:",meters.ap:value():mean())
+        accuracy_top1 = meters.clerr:value{k = 1}
     end
 
     --------------------------------
@@ -296,6 +298,15 @@ engine.hooks.onEndEpoch = function(state)
     --------------------------------
 
     storeModel(state.network, state.config, state.epoch, opt)
+
+    ------------------------------------
+    -- save best accuracy model to disk
+    ------------------------------------
+
+    if accuracy_top1 > test_best_accu then
+        test_best_accu = accuracy_top1
+        storeModelBest(state.network, opt)
+    end
 
     timers.epochTimer:reset()
     state.t = 0
