@@ -8,7 +8,7 @@
 --------------------------------------------------------------------------------
 
 -- Continuing an experiment where it left off
-local features_net, kps_net, classifier_net,
+local features_net, kps_net, classifier_net
 opt.iniEpoch = 1
 if opt.continue or opt.branch ~= 'none' then
     local prevModel
