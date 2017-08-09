@@ -115,7 +115,7 @@ To see the activity predictor model in action, the available demo displays the f
 - `-dataset <dataset_name>`: indicates which dataset to test on (default=`ucf_sports`);
 - `-demo_nvideos <num_videos>`: number of samples to display predictions (default=5);
 - `-demo_video_ids {id1, id2, id3, ..., idn}`: selects specific video ids to display (disables `-demo_nvideos` option);
-- `-demo_save_results false`: save the image plots to disk into the `results/` dir (if true).
+- `-demo_plot_save false`: save the image plots to disk into the `results/` dir (if true).
 
 > Note: Before running this script, you must be sure you have started a display server on your local machine. You can start it by simply running `th -ldisplay.start` on a separate shell. Then, open up a tab on your browser and go to `http://localhost:8000/` to visualize the results.
 (For more information about the `display` package and how to set up tthe server with different configurations go to [https://github.com/szym/display](https://github.com/szym/display))
