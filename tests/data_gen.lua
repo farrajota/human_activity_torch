@@ -22,6 +22,7 @@ opt.rotate = 15
 opt.scale = 0.2
 opt.rotRate = 0.5
 opt.batchSize = 2
+opt.seq_length = 30
 niters = 1000
 mode = 'train'
 plot_results = false
@@ -30,7 +31,7 @@ opt.params = torch.load('./data/pretrained_models/parameters_vgg16.t7')
 local data_loader = select_dataset_loader(opt.dataset, mode)
 local loader = data_loader[mode]
 
-print('Train data samples')
+print('==> Train data samples (with transforms)')
 for i=1, niters do
     --print(('Iter %d/%d'):format(i, niters))
     if i==183 then
@@ -48,13 +49,25 @@ for i=1, niters do
     xlua.progress(i, niters)
 end
 
-print('Test data samples')
+print('==> Train data samples (no transforms)')
 for i=1, niters do
     --print(('Iter %d/%d'):format(i, niters))
     if i==183 then
         a=1  -- stop debugger here
     end
     local input, label = getSampleBatch(loader, opt.batchSize, false)
+    xlua.progress(i, niters)
+end
+
+
+print('==> Train data samples (test)')
+for i=1, niters do
+    --print(('Iter %d/%d'):format(i, niters))
+    if i==183 then
+        a=1  -- stop debugger here
+    end
+    local idx = torch.random(1, loader.num_videos)
+    local input_kps, input_feats, label = getSampleTest(loader, idx)
     xlua.progress(i, niters)
 end
 

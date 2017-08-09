@@ -21,6 +21,7 @@ paths.dofile('projectdir.lua') -- Project directory
 paths.dofile('data.lua')
 paths.dofile('models/modules/NoBackprop.lua')
 paths.dofile('util/store.lua')
+paths.dofile('util/meanstd.lua')
 utils = paths.dofile('util/utils.lua')
 
 
@@ -141,14 +142,18 @@ if not opt then
     torch.save(opt.save .. '/options.t7', opt)
 end
 
+
 --------------------------------------------------------------------------------
 -- Number of activities
 --------------------------------------------------------------------------------
 
 -- setup data loader
 local data_loader = select_dataset_loader(opt.dataset)
-local loader = data_loader['train']
+local loader = data_loader['test']
+opt.test_num_videos = loader.num_videos
+loader = data_loader['train']
 opt.num_activities = loader.num_activities
+opt.num_videos = loader.num_videos
 
 
 -----------------------------------------------------------
@@ -159,57 +164,51 @@ function load_model(mode)
     local str = string.lower(mode)
     if str == 'train' then
         -- Load model
-        model, criterion = paths.dofile('model.lua')
+        model_features, model_kps, model_classifier, criterion = paths.dofile('model.lua')
 
-        model:training()
+        if model_features then model_features:evaluate() end
+        if model_kps then model_kps:evaluate() end
+        model_classifier:training()
     elseif str == 'test' then
         -- load model
-        model = torch.load(opt.load)
+        print('Loading models from file: ' .. opt.load)
+        model_features, model_kps, model_classifier, opt.params = unpack(torch.load(opt.load))
 
         if opt.GPU >= 1 then
             opt.dataType = 'torch.CudaTensor'  -- Use GPU
-            model:cuda()
+            if model_features then model_features:cuda() end
+            if model_kps then model_kps:cuda() end
+            model_classifier:cuda()
 
             -- convert to cuda
             if pcall(require, 'cudnn') then
-                print('Converting model backend to cudnn...')
-                cudnn.convert(model, cudnn):cuda()
+                print('Converting model features+classifier backend to cudnn...')
+                if model_features then cudnn.convert(model_features, cudnn):cuda() end
+                if model_kps then cudnn.convert(model_kps, cudnn):cuda() end
+                cudnn.convert(model_classifier, cudnn):cuda()
                 print('Done.')
             end
 
-            model = utils.loadDataParallel(model, 1) -- load model into 1 GPU
-            model:cuda()
+            if model_features then
+                if torch.type(model_features) == 'nn.DataParallelTable' then
+                    model_features = utils.loadDataParallel(model_features, 1)
+                end  -- load model into 1 GPU
+            end
+            if model_kps then
+                if torch.type(model_features) == 'nn.DataParallelTable' then
+                    model_kps = utils.loadDataParallel(model_kps, 1)
+                end  -- load model into 1 GPU
+            end
         else
-            opt.dataType = 'torch.FloatTensor' -- Use CPU
-            model:float()
+            error('Undefined behaviour for non-GPU/cuda models.')
+            --opt.dataType = 'torch.FloatTensor' -- Use CPU
+            --model_classifier:float()
         end
 
-        model:evaluate()
+        if model_features then model_features:evaluate() end
+        if model_kps then model_kps:evaluate() end
+        model_classifier:evaluate()
     else
         error(('Invalid mode: %s. mode must be either \'train\' or \'test\''):format(mode))
-    end
-end
-
-------------------------------------------------------------------------------------------------------------
-
-function process_mean_std()
-    if opt.colourNorm then
-        print('Loading mean/std normalization values... ')
-        local fname_meanstd = paths.concat(opt.expDir, 'meanstd_cache.t7')
-
-        if paths.filep(fname_meanstd) then
-            -- load mean/std from disk
-            print('Loading mean/std cache from disk: ' .. fname_meanstd)
-            opt.meanstd = torch.load(fname_meanstd, meanstd)
-        else
-            -- compute mean/std
-            local data_loader = select_dataset_loader(opt.dataset, 'train')
-            print('mean/std cache file not found. Computing mean/std for the ' .. opt.dataset ..' dataset:')
-            local meanstd = ComputeMeanStd(data_loader.train)
-            print('Saving mean/std cache to disk: ' .. fname_meanstd)
-            torch.save(fname_meanstd, meanstd)
-            opt.meanstd = meanstd
-        end
-        --print(opt.meanstd)
     end
 end

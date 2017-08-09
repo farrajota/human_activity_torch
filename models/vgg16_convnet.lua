@@ -1,29 +1,22 @@
 --[[
-    Load VGG16 + Temporal ConvNet networks.
+    Load VGG16 + ConvNet (avg pool + lin layer) networks.
 ]]
+
 
 
 require 'nn'
 
-------------------------------------------------------------------------------------------------------------
-
-local function SelectFeatsDisableBackprop(net)
-    local features = net
-    features:remove(features:size()) -- remove logsoftmax layer
-    features:remove(features:size()) -- remove 3rd linear layer
-    return nn.NoBackprop(features)
-end
 
 ------------------------------------------------------------------------------------------------------------
 
-local function load_network()
+local function load_features_network()
     local filepath = paths.concat(projectDir, 'data', 'pretrained_models')
 
     local net = torch.load(paths.concat(filepath, 'model_vgg16.t7'))
     local params = torch.load(paths.concat(filepath, 'parameters_vgg16.t7'))
 
-    net:remove(net:size()) -- remove logsoftmax layer
-    net:remove(net:size()) -- remove 3rd linear layer
+    net:remove(net:size())  -- remove logsoftmax layer
+    net:remove(net:size())  -- remove 3rd linear layer
 
     params.feat_size = 4096
 
@@ -32,32 +25,28 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
---[[ Create VGG16 + LSTM ]]--
+local function load_classifier_network(input_size, num_activities, seq_length)
+    local classifier = nn.Sequential()
+    classifier:add(nn.View(seq_length, 1, input_size))  -- convert to a nx1xfeats format
+    classifier:add(nn.SpatialAveragePooling(seq_length, 1, 1, 1))
+    classifier:add(nn.View(-1, input_size))  -- convert to batchsize x feats format
+    classifier:add(nn.Linear(input_size, num_activities))
+    return classifier
+end
+
+------------------------------------------------------------------------------------------------------------
+
+--[[ Create VGG16 + spatial average pooling + lin layer ]]--
 local function create_network()
 
-    local vgg16, params = load_network()
-    vgg16:evaluate()
+    local features, params = load_features_network()
+    features:evaluate()
 
-    local lstm, view3 = paths.dofile('lstm.lua')(params.feat_size,
-                                                 opt.nFeats,
-                                                 opt.num_activities,
-                                                 opt.nLayers,
-                                                 opt.batchSize,
-                                                 opt.seq_length)
+    local classifier = load_classifier_network(params.feat_size,
+                                               opt.num_activities,
+                                               opt.seq_length)
 
-    local model = nn.Sequential()
-    model:add(nn.View(opt.batchSize * opt.seq_length, 3, 224, 224))
-    model:add(SelectFeatsDisableBackprop(vgg16))
-    model:add(nn.View(opt.batchSize, opt.seq_length, -1))
-    model:add(lstm)
-    model.view3 = view3
-
-    -- monkey-patch the training function
-    function model:training()
-        model.modules[4]:training()
-    end
-
-    return model, params
+    return features, nil, classifier, params  -- features, kps, classifier, params
 end
 
 ------------------------------------------------------------------------------------------------------------

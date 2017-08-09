@@ -37,6 +37,11 @@ local function loader_ucf_sports(set_name)
     -- number of categories
     local num_activities = dbloader:size(set_name, 'activities')[1]
 
+    local activities = ascii2str(dbloader:get(set_name, 'activities'))
+
+    -- number of videos
+    local num_videos = dbloader:size(set_name, 'videos')[1]
+
     -- data loader function
     local data_loader = function(idx)
 
@@ -50,21 +55,16 @@ local function loader_ucf_sports(set_name)
         -- fetch all object ids belonging to the video
         local obj_ids = unpad_list(dbloader:get(set_name, 'list_object_ids_per_video', video) + 1, 0)  -- set to 1-index
 
-        -- random start from the video sequence
-        local idx_ini = math.random(1, #obj_ids - opt.seq_length) - 1
-
         -- get data from the selected video
         local imgs = {}
-        for iobj=1, opt.seq_length do
-            local data = dbloader:object(set_name, obj_ids[idx_ini + iobj], true)
+        for iobj=1, #obj_ids do
+            local data = dbloader:object(set_name, obj_ids[iobj], true)
 
             local filename = ascii2str(data[1])
             local img_filename = paths.concat(dbloader.data_dir, filename)
             local img = image.load(img_filename, 3, 'float')
 
             local bbox = data[2]:squeeze()
-            --if bbox:sum() == 0 then return nil end
-            --if bbox[4]-bbox[2] < 20 then return nil end
             local center = torch.FloatTensor{(bbox[1]+bbox[3])/2, (bbox[2]+bbox[4])/2}
             local scale = (bbox[4]-bbox[2]) / 200 * 1.5
 
@@ -82,8 +82,10 @@ local function loader_ucf_sports(set_name)
 
     return {
         loader = data_loader,
+        activities = activities,
         size = set_size,
-        num_activities = num_activities
+        num_activities = num_activities,
+        num_videos = num_videos
     }
 end
 
