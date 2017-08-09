@@ -151,48 +151,34 @@ engine.hooks.onSample = function(state)
     local num_batches = state.sample.input_feats[1]:size(1)
     local num_imgs_seq = state.sample.input_feats[1]:size(2)
 
+    --------
+    local function process_inputs(model, input)
+        local features = {}
+        if model then
+            local batch_feats_imgs = {}
+            for ibatch=1, num_batches do
+                local seq_feats = {}
+                for i=1, num_imgs_seq do
+                    local img = input[ibatch][i]
+                    local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
+                    local features = model:forward(img_cuda)
+                    table.insert(seq_feats, features)
+                end
+                -- convert table into a single tensor
+                table.insert(batch_feats_imgs, nn.Unsqueeze(1):cuda():forward(nn.JoinTable(1):cuda():forward(seq_feats)))
+            end
+            -- convert table into a single tensor
+            features = nn.JoinTable(1):cuda():forward(batch_feats_imgs)
+        end
+        return features
+    end
+    --------
+
     -- process images features
-    local inputs_features = {}
-    if model_features then
-        local batch_feats_imgs = {}
-        for ibatch=1, num_batches do
-            local seq_feats = {}
-            for i=1, num_imgs_seq do
-                local img =  state.sample.input_feats[1][ibatch][i]
-                local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
-                local features = model_features:forward(img_cuda)
-                table.insert(seq_feats, features)
-            end
-            -- convert table into a single tensor
-            table.insert(batch_feats_imgs, nn.JoinTable(1):cuda():forward(seq_feats))
-        end
-        -- convert table into a single tensor
-        inputs_features = nn.JoinTable(1):cuda():forward(batch_feats_imgs)
-        inputs_features = inputs_features:view(num_batches, num_imgs_seq, -1)
-    end
+    local input_features = process_inputs(model_features, state.sample.input_feats[1])
+    local inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
 
-    -- process images body joints
-    local inputs_kps = {}
-    if model_kps then
-        local batch_kps_imgs = {}
-        for ibatch=1, num_batches do
-            local seq_kps = {}
-            for i=1, num_imgs_seq do
-                local img =  state.sample.input_kps[1][ibatch][i]
-                local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
-                local kps = model_kps:forward(img_cuda)
-                table.insert(seq_kps, kps)
-            end
-            -- convert table into a single tensor
-            table.insert(batch_kps_imgs, nn.JoinTable(1):cuda():forward(seq_kps))
-        end
-        -- convert table into a single tensor
-        inputs_kps = torch.CudaTensor(num_batches, unpack(batch_kps_imgs[1]:size():totable()))
-        for ibatch=1, num_batches do
-            inputs_kps[ibatch]:copy(batch_kps_imgs[i])
-        end
-    end
-
+    -- copy data to targets
     targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
 
     if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'kps') then
