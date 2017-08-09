@@ -37,6 +37,8 @@ local function loader_ucf_sports(set_name)
     -- number of categories
     local num_activities = dbloader:size(set_name, 'activities')[1]
 
+    local activities = ascii2str(dbloader:get(set_name, 'activities'))
+
     -- number of videos
     local num_videos = dbloader:size(set_name, 'videos')[1]
 
@@ -80,6 +82,7 @@ local function loader_ucf_sports(set_name)
 
     return {
         loader = data_loader,
+        activities = activities,
         size = set_size,
         num_activities = num_activities,
         num_videos = num_videos
