@@ -242,19 +242,33 @@ function getSampleBatch(data_loader, batchSize, is_train)
 
     -- images (for body joints)
     local imgs_kps = torch.FloatTensor(batchSize, opt.seq_length,
-                                          3, opt.inputRes, opt.inputRes):fill(0)
+                                       3, opt.inputRes, opt.inputRes):fill(0)
     for i=1, batchSize do
+        local prev_sample = sample[i][1][1]
         for j=1, opt.seq_length do
-            imgs_kps[i][j]:copy(sample[i][1][j])
+            local sample_ = sample[i][1][j]
+            if sample_ then
+                prev_sample = sample_
+            else
+                sample_ = prev_sample
+            end
+            imgs_kps[i][j]:copy(sample_)
         end
     end
 
     -- images (for body joints)
     local imgs_feats = torch.FloatTensor(batchSize, opt.seq_length,
-                                          3, 224, 224):fill(0)
+                                         3, 224, 224):fill(0)
     for i=1, batchSize do
+        local prev_sample = sample[i][2][1]
         for j=1, opt.seq_length do
-            imgs_feats[i][j]:copy(sample[i][2][j])
+            local sample_ = sample[i][2][j]
+            if sample_ then
+                prev_sample = sample_
+            else
+                sample_ = prev_sample
+            end
+            imgs_feats[i][j]:copy(sample_)
         end
     end
 
