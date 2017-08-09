@@ -64,13 +64,24 @@ local function Parse(arg)
     cmd:text()
     cmd:text(' ---------- Demo options --------------------------------------')
     cmd:text()
-    cmd:option('-demo_nvideos',     5, 'Number of samples to display predictions.')
-    cmd:option('-demo_video_ids',     '{}', 'Selects specific video ids to display (disables -demo_nvideos option).')
-    cmd:option('-demo_save_results', 'false', 'Save plots to disk.')
+    cmd:option('-demo_nvideos',      5, 'Number of samples to display predictions.')
+    cmd:option('-demo_video_ids', '{}', 'Selects specific video ids to display (disables -demo_nvideos option).')
+    cmd:option('-demo_topk',         5, 'Display the top-k activities.')
+    cmd:option('-demo_plot_save', 'false', 'Save plots to disk.')
     cmd:text()
 
 
     local opt = cmd:parse(arg or {})
+    opt.continue       = utils.Str2Bool(opt.continue)
+    opt.clear_buffers  = utils.Str2Bool(opt.clear_buffers)
+    opt.saveBest       = utils.Str2Bool(opt.saveBest)
+    opt.demo_plot_save = utils.Str2Bool(opt.demo_plot_save)
+    opt.verbose        = utils.Str2Bool(opt.verbose)
+    opt.test_progressbar = utils.Str2Bool(opt.test_progressbar)
+    opt.test_load_best = utils.Str2Bool(opt.test_load_best)
+
+    opt.demo_video_ids = utils.Str2TableFn(opt.demo_video_ids)
+
     opt.expDir = paths.concat(opt.expDir, opt.dataset)
     opt.save = paths.concat(opt.expDir, opt.expID)
     if opt.loadModel == '' or opt.loadModel == 'none' then
@@ -90,16 +101,6 @@ local function Parse(arg)
     if string.lower(opt.data_dir) == 'none' then
         opt.data_dir = ''
     end
-
-    -- data augment testing vars
-    opt.continue = utils.Str2Bool(opt.continue)
-    opt.clear_buffers = utils.Str2Bool(opt.clear_buffers)
-    opt.saveBest    = utils.Str2Bool(opt.saveBest)
-    opt.demo_plot_save = utils.Str2Bool(opt.demo_plot_save)
-    opt.verbose = utils.Str2Bool(opt.verbose)
-
-    opt.test_progressbar = utils.Str2Bool(opt.test_progressbar)
-    opt.test_load_best = utils.Str2Bool(opt.test_load_best)
 
     return opt
 end
