@@ -5,10 +5,6 @@
 Recognize human activities of individuals using body pose joint annotations on video sequences.
 
 
-# WARNING
-
-This repo is a work in progress. This warning will be removed when code is working. For now, this repo represents only the scafold structure for the code.
-
 ## Installation
 
 ### Requirements
@@ -63,15 +59,16 @@ To start using this repo you'll need to clone this repo into your home directory
 git clone https://github.com/farrajota/human_activity_torch
 ```
 
-By default, this repo points to the home directory when running the scripts. If you want to save it into another directory, just remember to edit the `projectdir.lua` file and set the proper path to the save directory.
+By default, this repo path points to `~/human_activity_torch/` when running the scripts. If you want to save/place this repo into another path/directory, you'll need to edit the `projectdir.lua` file in the repo's root dir and set the proper path to where you cloned it.
 
-Next, you'll need to setup the necessary data for this code to run. First, download the `VGG16` model by running the `download_vgg.lua` script in the `download/` dir:
+Next, the necessary data for this code to run is needed to be set. Download the `VGG16` model by running the `download_vgg.lua` script in the `download/` dir:
 
 ```
 th download/download_vgg.lua
 ```
 
 The `vgg16` model uses the `cudnn` library, so make sure this package is installed on your system before proceeding any further.
+
 
 ## Train
 
