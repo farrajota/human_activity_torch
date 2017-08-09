@@ -16,22 +16,31 @@ print('==> (2/3) Load network from disk: ')
 load_model('test')
 
 -- select random video
-print(('==> (3/3) Select %d random video from %s'):format(opt.demo_nsamples, opt.dataset)
 local mode = 'test'
 local data_loader = select_dataset_loader(opt.dataset, mode)
 local loader = data_loader[mode]
 local activities = loader.activities
 
-for isample=1, opt.demo_nsamples do
-    -- sample random video + sequence images
-    local video_idx = math.random(1, loader.num_videos)
-    local input_kps, input_feats, label = getSampleTest(loader, idx)
+local video_ids = {}
+if next(opt.demo_video_ids) then
+    video_ids = opt.demo_video_ids
+else
+    video_ids = torch.Tensor(opt.demo_nvideos):random(1, loader.num_videos):totable()
+end
+print(('==> (3/3) Select %d videos from %s'):format(#video_ids, opt.dataset)
 
-    local num_imgs_seq =input_kps:size(2)
+
+for ivideo, video_idx in ipairs(video_ids) do
+    print((' > Processing Video %d/%d: '):format(ivideo, #video_ids))
+
+    print('   - Fetch video image sequence...')
+    local input_kps, input_feats, label = getSampleTest(loader, idx)
+    local num_imgs_seq = input_kps:size(2)
 
     -- process images features
     local inputs_features = {}
     if model_features then
+        print('   - Process image features...')
         for i=1, num_imgs_seq do
             local img = input_feats[1][i]
             local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
@@ -46,6 +55,7 @@ for isample=1, opt.demo_nsamples do
     -- process images body joints
     local inputs_kps = {}
     if model_kps then
+        print('   - Process image body joints...')
         for i=1, num_imgs_seq do
             local img =  input_kps[1][i]
             local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
@@ -72,6 +82,7 @@ for isample=1, opt.demo_nsamples do
     -- Classify sequence of images
     --------------------------------------------------------------------------------
 
+    print('   - Classify sequence...')
     local res = model_classifier:forward(input)
     local result = nn.Softmax():forward(res:float())
 
@@ -80,6 +91,7 @@ for isample=1, opt.demo_nsamples do
     -- Display video sequence (in browser)
     --------------------------------------------------------------------------------
 
+    print('   - Plot results to browser')
     local top_n = 5  -- top5
     local state_win
     for i=1, input_kps:size(2) do
@@ -101,5 +113,6 @@ for isample=1, opt.demo_nsamples do
         -- display image
         state_win = disp.image(img, {win=state_win,
                                      title=('Video %d, frame %d (%s)'):format(video_idx, i, activities[label])})
+        sys.sleep(0.1)
     end
 end
