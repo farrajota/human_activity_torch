@@ -7,7 +7,7 @@ Recognize human activities of individuals using body pose joint annotations on v
 
 # WARNING
 
-This repo is a work in progress. This warning shall be removed when code is working. For now, this repo represents only the scafold structure for the code.
+This repo is a work in progress. This warning will be removed when code is working. For now, this repo represents only the scafold structure for the code.
 
 ## Installation
 
@@ -24,6 +24,7 @@ To use this example code, some packages are required for it to work.
 ```bash
 luarocks install loadcaffe
 luarocks install cudnn
+luarocks install display
 ```
 
 ### dbcollection
@@ -74,17 +75,50 @@ The `vgg16` model uses the `cudnn` library, so make sure this package is install
 
 ## Train
 
-To train a network, simply run the `train.lua` script to start optimizing a pre-defined network (vgg16 + LSTM). This script is configured to train the network specified in the paper [TODO- insert paper link]().
+To train a network, simply run the `train.lua` script to start optimizing a pre-defined network (vgg16 + LSTM) on some default options. This script is configured to train the network specified in the paper [TODO- insert paper link]().
 
-In the `scripts/` dir there are several scripts to train other networks with different networks and on different conditions. Check them out to see more training configurations specs.
+To train a network, there are several input arguments to configure the training process. The most important ones are the following (the rest you can leave as defaults):
+
+- `-expID <exp_name>`: experiment id to store all the metadata, logs and model snapshots to disk under the `exp/` dir in the repo's main folder;
+- `-dataset <dataset_name>`: indicates which dataset to train on (default=`ucf_sports`); **(warning: for now, the ucf_sports is the only available dataset to train/test on)**
+- `-data_dir <path/to/dataset/files>`: Path to store the dataset\'s data files in case you haven't configured the `ucf_sports` previously in `dbcollection`. Specify a path if you want to store the data files into a specific folder.
+- `-expDir <path/to/folder>`: specifies which folder to store the experiment directory. By default, it uses the `exp/` dir in the repo's main directory. (optional)
+- `-netType <net_type_name>`: specifies which network to train. Options: vgg16-lstm | kps-lstm | vgg16-kps-lstm | vgg16-convnet | kps-convnet | vgg16-kps-convnet.
+- `-trainIters <num_iters>`: Number of train iterations per epoch (default=300).
+- `-testIters <num_iters>`: Number of test iterations per epoch (default=100).
+- `-nEpochs <num_epochs>`: Total number of epochs to runh (default=15).
+- `-batchSize <size>`: Mini-batch size (default=4).
+- `-seq_length <size>`: Sequence length (number of frames per window) (default=10).
+
+For more information about the available options, see the `options.lua` file or type `th train.lua -help`
+
+> Note: In the `scripts/` dir there are several scripts to train + test other networks with different architectures and configurations. Check them out to see more training configurations specs.
 
 ## Test
 
-TODO
+Evaluating a network is done by running the `test.lua` script with some input arguments. To do so, you need to provide the following input arguments:
+
+- `-expID <exp_name>`: experiment id that contains the model's snapshots + logs;
+- `-loadModel <path/to/network.t7>`: if this flag is used, it bypasses the `-expID` flag and loads a specific file;
+- `-dataset <dataset_name>`: indicates which dataset to test on (default=`ucf_sports`);
+- `-test_progressbar false`: displays text information per iteration instead of a progress bar (optional);
+- `-test_load_best false`: if true, it loads the best accuracy model (if exists, optional).
+
+The results of the test, when finished, are displayed on screen and stored in the folder of the network file with the name `Evaluation_full.log`.
 
 ## Demo
 
-TODO
+To see the activity predictor model in action, the available demo displays the full sequence of images of a video/s in the browser. To launch the demo, you need to run `demo.lua` with some input arguments to specify which network to use and some other options:
+
+- `-expID <exp_name>`: experiment id that contains the model's snapshots + logs;
+- `-loadModel <path/to/network.t7>`: if this flag is used, it bypasses the `-expID` flag and loads a specific file;
+- `-dataset <dataset_name>`: indicates which dataset to test on (default=`ucf_sports`);
+- `-demo_nvideos <num_videos>`: number of samples to display predictions (default=5);
+- `-demo_video_ids {id1, id2, id3, ..., idn}`: selects specific video ids to display (disables `-demo_nvideos` option);
+- `-demo_save_results false`: save the image plots to disk into the `results/` dir (if true).
+
+> Note: Before running this script, you must be sure you have started a display server on your local machine. You can start it by simply running `th -ldisplay.start` on a separate shell. Then, open up a tab on your browser and go to `http://localhost:8000/` to visualize the results.
+(For more information about the `display` package and how to set up tthe server with different configurations go to [https://github.com/szym/display](https://github.com/szym/display))
 
 ## Results
 
