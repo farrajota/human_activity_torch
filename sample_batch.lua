@@ -292,18 +292,24 @@ function getSampleTest(data_loader, idx)
 
     -- get batch data
     local sample = fetch_single_data(data_loader, idx, false, false)
-    local seq_length = #sample[1]
+    local sample_seq_length = #sample[1]
+    local min_seq_length = opt.seq_length
+    local seq_length = math.max(min_seq_length, sample_seq_length)
+    local ini = 0  -- this padding is needed for cases where the test sequence length is smaller than the train seq length
+    if min_seq_length > sample_seq_length then
+        ini = min_seq_length - sample_seq_length
+    end
 
     -- images (for body joints)
     local imgs_kps = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0)
-    for j=1, seq_length do
-        imgs_kps[1][j]:copy(sample[1][j])
+    for j=1, sample_seq_length do
+        imgs_kps[1][j+ini]:copy(sample[1][j])
     end
 
     -- images (for body joints)
     local imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0)
-    for j=1, seq_length do
-        imgs_feats[1][j]:copy(sample[2][j])
+    for j=1, sample_seq_length do
+        imgs_feats[1][j+ini]:copy(sample[2][j])
     end
 
     -- labels
