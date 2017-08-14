@@ -34,19 +34,19 @@ end
 
 local function load_classifier_network(input_size, num_feats, num_activities, num_layers, seq_length)
     local classifier = nn.Sequential()
-    classifier:add(nn.Unsqueeze(2))   -- add singleton to dim2 such that input = B x 1 x seq_length x input_size
-    classifier:add(nn.Transpose({2,4}))  -- swap dim2 with dim4 such that input = B x input_size x seq_length x 1
-    classifier:add(nn.SpatialConvolution(input_size, num_feats, 1, seq_length,1,1))
-    classifier:add(nn.SpatialBatchNormalization(num_feats, 1e-3))
+    --classifier:add(nn.Unsqueeze(2))   -- add singleton to dim2 such that input = B x 1 x seq_length x input_size
+    classifier:add(nn.Transpose({2,3}))  -- swap dim2 with dim4 such that input = B x input_size x seq_length x 1
+    classifier:add(nn.VolumetricConvolution(input_size, num_feats, 5,5,5, 1,1,1, 2,2,2))
     classifier:add(nn.ReLU(true))
+    --classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
     for i=2, num_layers do
-        classifier:add(nn.SpatialConvolution(num_feats, num_feats, 1,1,1,1))
-        classifier:add(nn.SpatialBatchNormalization(num_feats, 1e-3))
+        classifier:add(nn.VolumetricConvolution(num_feats, num_feats, 5,5,5, 1,1,1, 2,2,2))
         classifier:add(nn.ReLU(true))
+        --classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
     end
-    classifier:add(nn.SpatialConvolution(num_feats, num_activities, 1,1,1,1))
+    classifier:add(nn.VolumetricAveragePooling(seq_length,7,7, 1,1,1))
+    classifier:add(nn.VolumetricConvolution(num_feats, num_activities, 1,1,1, 1,1,1))
     classifier:add(nn.View(-1, num_activities))
-
 
     --classifier:add(nn.View(seq_length, 1, input_size))  -- convert to a BxNx1xfeats format
     --classifier:add(nn.SpatialAveragePooling(seq_length, 1, 1, 1))
