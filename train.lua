@@ -177,10 +177,6 @@ engine.hooks.onSample = function(state)
     -- process images features
     local input_features = process_inputs(model_features, state.sample.input_feats[1])
     local inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
-
-    -- copy data to targets
-    targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
-
     if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'kps') then
         state.sample.input = {inputs_features, inputs_kps}
     elseif string.find(opt.netType, 'vgg16') then
@@ -190,7 +186,16 @@ engine.hooks.onSample = function(state)
     else
         error('Invalid network type: ' .. opt.netType)
     end
-    state.sample.target = targets:view(-1)
+
+    -- copy data to targets
+    targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
+    if string.find(opt.netType, 'lstm') then
+        state.sample.target = targets:view(-1)
+    elseif string.find(opt.netType, 'convnet') then
+        state.sample.target = targets[{{},{1}}]:squeeze(2):contiguous()
+    else
+        error('Invalid network type: ' .. opt.netType)
+    end
 
     timers.dataTimer:stop()
     timers.batchTimer:reset()
