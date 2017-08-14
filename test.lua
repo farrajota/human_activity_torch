@@ -118,33 +118,26 @@ engine.hooks.onSample = function(state)
 
     local num_imgs_seq = state.sample.input_feats[1]:size(2)
 
-    -- process images features
-    local inputs_features = {}
-    if model_features then
-        for i=1, num_imgs_seq do
-            local img =  state.sample.input_feats[1][1][i]
-            local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
-            local features = model_features:forward(img_cuda)
-            table.insert(inputs_features, features)
+    ------
+    local function process_inputs(model, input)
+        local inputs_features = {}
+        if model then
+            for i=1, num_imgs_seq do
+                local img = input[1][1][i]
+                local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
+                local features = model:forward(img_cuda)
+                table.insert(inputs_features, features)
+            end
+            -- convert table into a single tensor
+            inputs_features = nn.Unsqueeze(1):cuda():forward(nn.JoinTable(1):cuda():forward(inputs_features))
         end
-        -- convert table into a single tensor
-        inputs_features = nn.JoinTable(1):cuda():forward(inputs_features)
-        inputs_features = inputs_features:view(1, num_imgs_seq, -1)
+        return inputs_features
     end
+    ------
 
-    -- process images body joints
-    local inputs_kps = {}
-    if model_kps then
-        for i=1, num_imgs_seq do
-            local img =  state.sample.input_kps[1][1][i]
-            local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
-            local kps = model_kps:forward(img_cuda)
-            table.insert(inputs_kps, kps)
-        end
-        -- convert table into a single tensor
-        inputs_kps = nn.JoinTable(1):cuda():forward(inputs_kps)
-        inputs_kps = nn.Unsqueeze(1):cuda():forward(inputs_kps)
-    end
+    local inputs_features = process_inputs(model_features, state.sample.input_feats)
+    local inputs_kps = process_inputs(model_kps, state.sample.input_kps)
+
 
     targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
 
@@ -164,6 +157,7 @@ engine.hooks.onSample = function(state)
 end
 
 
+local softmax = cast(nn.SoftMax())
 engine.hooks.onForward= function(state)
     if opt.test_progressbar then
         xlua.progress(state.t, nSamples)
@@ -176,13 +170,23 @@ engine.hooks.onForward= function(state)
                 timers.totalTimer:time().real))
     end
 
-    meters.clerr:add(state.network.output,state.sample.target)
-    local tar = torch.ByteTensor(#state.network.output):fill(0)
-    for k=1,state.sample.target:size(1) do
-        local id = state.sample.target[k]
-        tar[k][id]=1
+    local out = softmax:forward(state.network.output)
+    if string.find(opt.netType, 'lstm') then
+        local end_idx = state.sample.target:size(1)
+        meters.clerr:add(out[{{end_idx}, {}}],state.sample.target[{{end_idx}}])
+        local tar = torch.ByteTensor(out:size(2)):fill(0)
+        local id = state.sample.target[end_idx]
+        tar[id] = 1
+        meters.ap:add(out[end_idx],tar)
+    elseif string.find(opt.netType, 'convnet') then
+        out = out:mean(1):squeeze()  -- mean
+        meters.clerr:add(out,state.sample.target[{{1}}])
+        local tar = torch.ByteTensor(out:size(1)):fill(0)
+        tar[state.sample.target[1]] = 1
+        meters.ap:add(out,tar)
+    else
+        error('Invalid network type: ' .. opt.netType)
     end
-    meters.ap:add(state.network.output,tar)
 
     collectgarbage()
 
