@@ -1,5 +1,5 @@
 --[[
-    Test loading the vgg16 + lstm model
+    Test loading the vgg16 models (LSTM + ConvNet3D)
 ]]
 
 require 'torch'
@@ -21,7 +21,6 @@ utils = paths.dofile('../util/utils.lua')
 local opts = paths.dofile('../options.lua')
 opt = opts.parse(arg)
 opt.dataset = 'ucf_sports'
-opt.netType = 'vgg16-lstm2'
 opt.nFeats = 256
 opt.num_activities = 10
 opt.nLayers = 2
