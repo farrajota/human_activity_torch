@@ -30,7 +30,7 @@ local opts = {
     -- train options
     optMethod = 'adam',
     nThreads = 2,
-    nEpochs = 20,
+    nEpochs = 10,
     trainIters = 300,
     testIters = 100,
     seq_length = 25,
@@ -55,9 +55,9 @@ end
 
 local str_cuda
 if opts.nGPU <= 1 then
-    str_cuda = 'CUDA_VISIBLE_DEVICES=1'
+    str_cuda = 'CUDA_VISIBLE_DEVICES=0'
 else
-    str_cuda = 'CUDA_VISIBLE_DEVICES=1,0'
+    str_cuda = 'CUDA_VISIBLE_DEVICES=0,1'
 end
 
 -- train network
