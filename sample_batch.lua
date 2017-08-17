@@ -178,7 +178,9 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
         new_img = new_img:index(1, torch.LongTensor{3,2,1})  -- bgr
 
         -- rescale pixels
-        new_img:mul(opt.params.pixel_scale)
+        if opt.params.pixel_scale then
+            new_img:mul(opt.params.pixel_scale)
+        end
 
         -- normalize pixels
         for i=1, 3 do
@@ -305,11 +307,21 @@ function getSampleTest(data_loader, idx)
     for j=1, sample_seq_length do
         imgs_kps[1][j+ini]:copy(sample[1][j])
     end
+    if ini > 0 then
+        for j=1, ini do
+             imgs_kps[1][j]:copy(sample[1][j])
+        end
+    end
 
     -- images (for body joints)
     local imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0)
     for j=1, sample_seq_length do
         imgs_feats[1][j+ini]:copy(sample[2][j])
+    end
+    if ini > 0 then
+        for j=1, ini do
+             imgs_feats[1][j]:copy(sample[2][j])
+        end
     end
 
     -- labels
