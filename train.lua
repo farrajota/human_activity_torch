@@ -175,7 +175,7 @@ engine.hooks.onSample = function(state)
     --------
 
     -- process images features
-    local input_features = process_inputs(model_features, state.sample.input_feats[1])
+    local inputs_features = process_inputs(model_features, state.sample.input_feats[1])
     local inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
     if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'kps') then
         state.sample.input = {inputs_features, inputs_kps}
