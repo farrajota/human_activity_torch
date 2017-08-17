@@ -37,14 +37,19 @@ local function load_classifier_network(input_size, num_feats, num_activities, nu
     --classifier:add(nn.Unsqueeze(2))   -- add singleton to dim2 such that input = B x 1 x seq_length x input_size
     classifier:add(nn.Transpose({2,3}))  -- swap dim2 with dim4 such that input = B x input_size x seq_length x 1
     classifier:add(nn.VolumetricConvolution(input_size, num_feats, 5,5,5, 1,1,1, 2,2,2))
+    classifier:add(nn.VolumetricBatchNormalization(num_feats, 1e-3))
     classifier:add(nn.ReLU(true))
+    classifier:add(nn.Dropout(opt.dropout))
     --classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
     for i=2, num_layers do
         classifier:add(nn.VolumetricConvolution(num_feats, num_feats, 5,5,5, 1,1,1, 2,2,2))
+        classifier:add(nn.VolumetricBatchNormalization(num_feats, 1e-3))
         classifier:add(nn.ReLU(true))
+        classifier:add(nn.Dropout(opt.dropout))
         --classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
     end
     classifier:add(nn.VolumetricAveragePooling(seq_length,7,7, 1,1,1))
+    classifier:add(nn.Dropout(opt.dropout))
     classifier:add(nn.VolumetricConvolution(num_feats, num_activities, 1,1,1, 1,1,1))
     classifier:add(nn.View(-1, num_activities))
 
