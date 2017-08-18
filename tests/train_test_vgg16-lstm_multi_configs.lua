@@ -101,7 +101,7 @@ local test_opts = {
     {expID = 'vgg16-lstm-test6', seq_length = 30, batchSize = 4},
     {expID = 'vgg16-lstm-test7', seq_length = 10, batchSize = 16},
     {expID = 'vgg16-lstm-test8', seq_length = 20, batchSize = 16},
-    {expID = 'vgg16-lstm-test9', seq_length = 30, batchSize = 16},
+    {expID = 'vgg16-lstm-test9', seq_length = 30, batchSize = 16},  -- best: seq=30 + batchsize=16
     --{expID = 'vgg16-lstm-test10', seq_length = 10, batchSize = 32},
     --{expID = 'vgg16-lstm-test11', seq_length = 20, batchSize = 32},
     --{expID = 'vgg16-lstm-test12', seq_length = 30, batchSize = 32},
@@ -110,7 +110,7 @@ local test_opts = {
     {expID = 'vgg16-lstm-test13', seq_length = 10, batchSize = 4, nFeats = 256, nLayers = 1,},
     {expID = 'vgg16-lstm-test14', seq_length = 10, batchSize = 4, nFeats = 512, nLayers = 1,},
     {expID = 'vgg16-lstm-test15', seq_length = 10, batchSize = 4, nFeats = 256, nLayers = 2,},
-    {expID = 'vgg16-lstm-test16', seq_length = 10, batchSize = 4, nFeats = 512, nLayers = 2,},
+    {expID = 'vgg16-lstm-test16', seq_length = 10, batchSize = 4, nFeats = 512, nLayers = 2,},  -- best: nfeats=512, nlayers=2
     {expID = 'vgg16-lstm-test17', seq_length = 10, batchSize = 4, nFeats = 256, nLayers = 3,},
     {expID = 'vgg16-lstm-test18', seq_length = 10, batchSize = 4, nFeats = 512, nLayers = 3,},
 
@@ -118,12 +118,12 @@ local test_opts = {
     {expID = 'vgg16-lstm-test19', seq_length = 10, batchSize = 4, LR = 1e-3,   grad_clip = 0,},
     {expID = 'vgg16-lstm-test20', seq_length = 10, batchSize = 4, LR = 2.5e-4, grad_clip = 0,},
     {expID = 'vgg16-lstm-test21', seq_length = 10, batchSize = 4, LR = 1e-4,   grad_clip = 0,},
-    {expID = 'vgg16-lstm-test22', seq_length = 10, batchSize = 4, LR = 1e-3,   grad_clip = 10,},
+    {expID = 'vgg16-lstm-test22', seq_length = 10, batchSize = 4, LR = 1e-3,   grad_clip = 10,},  -- best: LR=1e-3, grad_clip=10
     {expID = 'vgg16-lstm-test23', seq_length = 10, batchSize = 4, LR = 2.5e-4, grad_clip = 10,},
     {expID = 'vgg16-lstm-test24', seq_length = 10, batchSize = 4, LR = 1e-4,   grad_clip = 10,},
 
     -- try different data augmentation
-    {expID = 'vgg16-lstm-test25', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 30,},
+    {expID = 'vgg16-lstm-test25', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 30,},  - best: rotRate=0.5, scale=0.25, rotate=30
     {expID = 'vgg16-lstm-test26', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 15,},
     {expID = 'vgg16-lstm-test27', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 0,},
     {expID = 'vgg16-lstm-test28', seq_length = 10, batchSize = 4, rotRate = .5, scale = .15, rotate = 30,},
@@ -154,6 +154,7 @@ for i, test_opt in ipairs(test_opts) do
     -- test network
     exec_command(('th test.lua %s'):format(str_args))
 
+    -- log best accuracy
     log(opts)
 end
 
