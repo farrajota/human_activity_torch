@@ -20,7 +20,6 @@ local function load_features_network()
     net:add(nn.SelectTable(-1))
     net:add(nn.View(-1, 11*64*64))
     local params = {
-      pixel_scale = 1,
       dims = {11, 64, 64},
       feat_size = 11 * 64 * 64
     }
