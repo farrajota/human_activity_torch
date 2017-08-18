@@ -29,14 +29,17 @@ local function load_classifier_network(input_size, num_feats, num_activities, nu
     local classifier = nn.Sequential()
     classifier:add(nn.Transpose({2,3}))  -- swap dim2 with dim4 such that input = B x input_size x seq_length x 1
     classifier:add(nn.VolumetricConvolution(input_size, num_feats, 3,3,3, 1,1,1, 1,1,1))
+    classifier:add(nn.VolumetricBatchNormalization(num_feats, 1e-3))
     classifier:add(nn.ReLU(true))
-    --classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
+    classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
     for i=2, num_layers do
         classifier:add(nn.VolumetricConvolution(num_feats, num_feats, 3,3,3, 1,1,1, 1,1,1))
+        classifier:add(nn.VolumetricBatchNormalization(num_feats, 1e-3))
         classifier:add(nn.ReLU(true))
-        --classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
+        classifier:add(nn.VolumetricMaxPooling(2,2,2, 2,2,2))
     end
-    classifier:add(nn.VolumetricAveragePooling(seq_length, 64,64, 1,1,1))
+    --classifier:add(nn.VolumetricAveragePooling(seq_length, 64,64, 1,1,1))
+    classifier:add(nn.VolumetricAveragePooling(math.floor(seq_length/(2*num_layers)), 64/(2*num_layers),64/(2*num_layers), 1,1,1))
     classifier:add(nn.VolumetricConvolution(num_feats, num_activities, 1,1,1, 1,1,1))
     classifier:add(nn.View(-1, num_activities))
 
