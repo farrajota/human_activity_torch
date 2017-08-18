@@ -43,8 +43,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local function log(opt)
-    -- get accuracy from the network
-    local stats = read_log_file(opt)
+    local stats = read_log_file(opt)  -- get accuracy from the network
     logger:add{opt.expID, tonumber(stats[1]), tonumber(stats[2]), tonumber(stats[3])}
 end
 
@@ -123,7 +122,7 @@ local test_opts = {
     {expID = 'vgg16-lstm-test24', seq_length = 10, batchSize = 4, LR = 1e-4,   grad_clip = 10,},
 
     -- try different data augmentation
-    {expID = 'vgg16-lstm-test25', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 30,},  - best: rotRate=0.5, scale=0.25, rotate=30
+    {expID = 'vgg16-lstm-test25', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 30,},  -- best: rotRate=0.5, scale=0.25, rotate=30
     {expID = 'vgg16-lstm-test26', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 15,},
     {expID = 'vgg16-lstm-test27', seq_length = 10, batchSize = 4, rotRate = .5, scale = .25, rotate = 0,},
     {expID = 'vgg16-lstm-test28', seq_length = 10, batchSize = 4, rotRate = .5, scale = .15, rotate = 30,},
