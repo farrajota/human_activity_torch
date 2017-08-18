@@ -102,9 +102,22 @@ end
 
 local function fetch_subset_images(imgs, seq_length)
     local out_imgs = {}
-    local idx_ini = math.random(1, #imgs - opt.seq_length) - 1  -- select a subset of images from the video
-    for i=1, seq_length do
-        table.insert(out_imgs, imgs[idx_ini + i])
+    local nimgs = #imgs
+    if nimgs > seq_length then
+        local idx_ini = math.random(1, nimgs - seq_length) - 1  -- select a subset of images from the video
+        for i=1, seq_length do
+            table.insert(out_imgs, imgs[idx_ini + i])
+        end
+    else
+        -- loop the sequence video
+        local idx_ini = math.random(1, nimgs)
+        for i=1, seq_length do
+            table.insert(out_imgs, imgs[idx_ini])
+            idx_ini = idx_ini + 1
+            if idx_ini > nimgs then
+                idx_ini = 1
+            end
+        end
     end
     return out_imgs
 end
@@ -302,25 +315,16 @@ function getSampleTest(data_loader, idx)
         ini = min_seq_length - sample_seq_length
     end
 
-    -- images (for body joints)
+    -- images data
     local imgs_kps = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0)
-    for j=1, sample_seq_length do
-        imgs_kps[1][j+ini]:copy(sample[1][j])
-    end
-    if ini > 0 then
-        for j=1, ini do
-             imgs_kps[1][j]:copy(sample[1][j])
-        end
-    end
-
-    -- images (for body joints)
     local imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0)
-    for j=1, sample_seq_length do
-        imgs_feats[1][j+ini]:copy(sample[2][j])
-    end
-    if ini > 0 then
-        for j=1, ini do
-             imgs_feats[1][j]:copy(sample[2][j])
+    local ini_id = 1
+    for j=1, seq_length do
+        imgs_kps[1][j]:copy(sample[1][ini_id])
+        imgs_feats[1][j]:copy(sample[2][ini_id])
+        ini_id = ini_id + 1
+        if ini_id > sample_seq_length then
+            ini_id = 1
         end
     end
 
