@@ -175,6 +175,23 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
+local function print_model_to_txt(filename, input)
+    assert(filename)
+    assert(input)
+
+    local file =  io.open(filename, 'w')
+    for k, v in ipairs(input) do
+        local title = ('%s\n'):format(v[1])
+        local net = ('%s\n'):format(tostring(v[2]))
+        file:write(title)
+        file:write(net)
+        file:write('\n')
+    end
+    file:close()
+end
+
+------------------------------------------------------------------------------------------------------------
+
 return {
    MSRinit = MSRinit,
    FCinit = FCinit,
@@ -189,4 +206,7 @@ return {
    Str2TableFn = Str2TableFn,
    ConcatTables = ConcatTables,
    Str2Bool = ConvertString2Boolean,
+
+   -- save to file
+   print_model_to_txt = print_model_to_txt,
 }
