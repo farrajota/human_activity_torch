@@ -22,6 +22,13 @@ paths.dofile('configs.lua')
 print('==> (2/3) Load/create network: ')
 load_model('train')
 
+utils.print_model_to_txt(paths.concat(opt.save, 'architecture.txt'),
+                         {
+                             {'==> Features network:', model_features},
+                             {'==> Body Joint kps network:', model_kps},
+                             {'==> Classifier network:', model_classifier}
+                         })
+
 
 -- set local vars
 local lopt = opt
