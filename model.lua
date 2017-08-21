@@ -58,6 +58,28 @@ opt.dataType = 'torch.CudaTensor'
 
 
 --------------------------------------------------------------------------------
+-- Convert to CUDNN
+--------------------------------------------------------------------------------
+
+if opt.convert_cudnn then
+    if pcall(require, 'cudnn') then
+        ------
+        local function convert_cudnn(model)
+            cudnn.convert(model, cudnn):cuda()
+            cudnn.benchmark = true
+            if opt.cudnn_deterministic then
+                model:apply(function(m) if m.setMode then m:setMode(1,1,1) end end)
+            end
+            print('Network has', #model:findModules'cudnn.SpatialConvolution', 'cudnn convolutions')
+        end
+        ------
+        if features_net then convert_cudnn(features_net) end
+        if kps_net then convert_cudnn(kps_net) end
+        convert_cudnn(classifier_net)
+    end
+end
+
+--------------------------------------------------------------------------------
 -- Config network to use multiple GPUs
 --------------------------------------------------------------------------------
 
