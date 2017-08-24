@@ -123,7 +123,7 @@ engine.hooks.onSample = function(state)
         local inputs_features = {}
         if model then
             for i=1, num_imgs_seq do
-                local img = input[1][1][i]
+                local img = input[1][i]
                 local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
                 local features = model:forward(img_cuda)
                 table.insert(inputs_features, features)
@@ -135,8 +135,8 @@ engine.hooks.onSample = function(state)
     end
     ------
 
-    local inputs_features = process_inputs(model_features, state.sample.input_feats)
-    local inputs_kps = process_inputs(model_kps, state.sample.input_kps)
+    local inputs_features = process_inputs(model_features, state.sample.input_feats[1])
+    local inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
 
 
     targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
