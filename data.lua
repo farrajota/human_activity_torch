@@ -45,15 +45,11 @@ local function loader_ucf_sports(set_name)
     -- data loader function
     local data_loader = function(idx)
 
-        -- select a random activity
-        local iactivity = math.random(1, num_activities)
-
-        -- select a random video from the selected activity
-        local video_ids = unpad_list(dbloader:get(set_name, 'list_videos_per_activity', iactivity))
-        local video = video_ids[math.random(1, #video_ids)] + 1  -- set to 1-index
-
         -- fetch all object ids belonging to the video
-        local obj_ids = unpad_list(dbloader:get(set_name, 'list_object_ids_per_video', video) + 1, 0)  -- set to 1-index
+        local obj_ids = unpad_list(dbloader:get(set_name, 'list_object_ids_per_video', idx) + 1, 0)  -- set to 1-index
+
+        local tmp_data = dbloader:object(set_name, obj_ids[1])
+        local label = tmp_data[1][4]
 
         -- get data from the selected video
         local imgs = {}
@@ -66,7 +62,7 @@ local function loader_ucf_sports(set_name)
 
             local bbox = data[2]:squeeze()
             local center = torch.FloatTensor{(bbox[1]+bbox[3])/2, (bbox[2]+bbox[4])/2}
-            local scale = (bbox[4]-bbox[2]) / 200 * 1.5
+            local scale = (bbox[4]-bbox[2]) / 200 * 1.25
 
             table.insert(imgs, {img = img,
                                 center = center,
@@ -75,17 +71,22 @@ local function loader_ucf_sports(set_name)
                                 bbox = bbox})
         end
 
-        local label = iactivity
-
         return imgs, label
+    end
+
+    -- return a list of all video ids of an activity
+    local get_video_ids_activity = function(activity_id)
+        return unpad_list(dbloader:get(set_name, 'list_videos_per_activity', activity_id))
     end
 
     return {
         loader = data_loader,
+        get_video_ids = get_video_ids_activity,
         activities = activities,
         size = set_size,
         num_activities = num_activities,
-        num_videos = num_videos
+        num_videos = num_videos,
+        set = set_name,
     }
 end
 
