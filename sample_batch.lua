@@ -216,7 +216,7 @@ local function get_batch(data_loader, batchSize, is_train)
     assert(is_train ~= nil)
     assert(type(is_train) == 'boolean')
 
-    local size = data_loader.size
+    local size = data_loader.num_activities
     local max_attempts = 30
     local batchData, idxUsed = {}, {}
 
@@ -224,7 +224,14 @@ local function get_batch(data_loader, batchSize, is_train)
         local data = {}
         local attempts = 0
         while not next(data) do
-            local idx = torch.random(1, size)
+            -- select a random activity
+            local activity_id = math.random(1, data_loader.num_activities)
+
+            -- select a random video from the selected activity
+            local video_ids = data_loader.get_video_ids(activity_id)
+            local video_id = video_ids[math.random(1, #video_ids)] + 1  -- set to 1-index
+
+            local idx = video_id
             if not idxUsed[idx] then
                 data = fetch_single_data(data_loader, idx, is_train, true)
                 idxUsed[idx] = 1
@@ -307,6 +314,8 @@ function getSampleTest(data_loader, idx)
 
     -- get batch data
     local sample = fetch_single_data(data_loader, idx, false, false)
+
+    -- sample size
     local sample_seq_length = #sample[1]
     local min_seq_length = opt.seq_length
     local seq_length = math.max(min_seq_length, sample_seq_length)
