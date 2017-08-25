@@ -152,6 +152,7 @@ end
 
 -- copy sample to GPU buffer:
 local inputs, targets = cast(torch.Tensor()), cast(torch.Tensor())
+local vgg_feats = cast(torch.Tensor(opt.batchSize, opt.seq_length, 4096))
 engine.hooks.onSample = function(state)
     cutorch.synchronize(); collectgarbage();
 
@@ -181,9 +182,20 @@ engine.hooks.onSample = function(state)
     end
     --------
 
-    -- process images features
-    local inputs_features = process_inputs(model_features, state.sample.input_feats[1])
-    local inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
+
+    local inputs_features, inputs_kps = {}, {}
+    if model_kps and model_features then
+        inputs_features = process_inputs(model_features, state.sample.input_feats[1])
+        inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
+    else
+        local batch_features = {}
+        for ibatch=1, num_batches do
+            inputs:resize(state.sample.input_feats[1][ibatch]:size() ):copy(state.sample.input_feats[1][ibatch])
+            local features = model_features:forward(inputs)
+            vgg_feats[ibatch]:copy(features)
+        end
+        inputs_features = vgg_feats
+    end
     if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'kps') then
         state.sample.input = {inputs_features, inputs_kps}
     elseif string.find(opt.netType, 'vgg16') then
