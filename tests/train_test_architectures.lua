@@ -66,12 +66,12 @@ local function get_configs()
 
         -- train options
         optMethod = 'adam',
-        LR = 1e-3,
+        LR = 1e-4,
         nThreads = 2,
         nEpochs = 10,
         trainIters = 300,
         testIters = 100,
-        seq_length = 30,
+        seq_length = 32,
         batchSize = 4,
         grad_clip = 10,
         snapshot = 0,
@@ -90,20 +90,21 @@ end
 
 local test_opts = {
     -- lstm
-    {expID = 'vgg16-lstm-test-arch', netType = 'vgg16-lstm'},
-    {expID = 'vgg16-lstm2-test-arch', netType = 'vgg16-lstm2'},
-    {expID = 'kps-lstm-test-arch', netType = 'kps-lstm'},
-    {expID = 'vgg16-kps-lstm-test-arch', netType = 'vgg16-kps-lstm'},
+    --{expID = 'architecture-test1', netType = 'vgg16-lstm'},
+    --{expID = 'architecture-test2', netType = 'vgg16-lstm2'},
+    --{expID = 'architecture-test3', netType = 'kps-lstm'},
+    --{expID = 'architecture-test4', netType = 'vgg16-kps-lstm'},
 
     -- convnet 3D
-    {expID = 'vgg16-convnet3d-test-arch', netType = 'vgg16-convnet3d'},
-    {expID = 'vgg16-convnet3d_2-test-arch', netType = 'vgg16-convnet3d_2'},
-    {expID = 'kps-convnet3d-test-arch', netType = 'kps-convnet3d'},
-    {expID = 'kps-convnet3d_2-test-arch', netType = 'kps-convnet3d_2'},
-    {expID = 'kps-convnet3d_3-test-arch', netType = 'kps-convnet3d_3'},
-    {expID = 'kps-convnet3d_4-test-arch', netType = 'kps-convnet3d_4'},
-    {expID = 'vgg16-kps-convnet3d-test-arch', netType = 'vgg16-kps-convnet3d'},
-    {expID = 'vgg16-kps-convnet3d_2-test-arch', netType = 'vgg16-kps-convnet3d_2'},
+    --{expID = 'architecture-test5', netType = 'vgg16-convnet3d'},
+    --{expID = 'architecture-test6', netType = 'vgg16-convnet3d_2'},
+    --{expID = 'architecture-test7', netType = 'kps-convnet3d'},
+    --{expID = 'architecture-test8', netType = 'kps-convnet3d_2'},
+    --{expID = 'architecture-test9', netType = 'kps-convnet3d_3', convert_cudnn = 'false'},
+    --{expID = 'architecture-test10', netType = 'kps-convnet3d_4', convert_cudnn = 'false'},
+    {expID = 'architecture-test11', netType = 'kps-convnet3d_8', convert_cudnn = 'true'},
+    {expID = 'architecture-test12', netType = 'vgg16-kps-convnet3d', convert_cudnn = 'false'},
+    {expID = 'architecture-test13', netType = 'vgg16-kps-convnet3d_2', convert_cudnn = 'false'},
 }
 
 for i, test_opt in ipairs(test_opts) do

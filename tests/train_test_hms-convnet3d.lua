@@ -13,11 +13,11 @@ end
 
 local opts = {
     -- experiment id
-    expID = 'kps-lstm-test',
+    expID = 'hms-convnet3d-test',
     dataset = 'ucf_sports',
 
     -- model
-    netType = 'kps-lstm',
+    netType = 'hms-convnet3d',
     nFeats = 256,
     nLayers = 2,
 
@@ -35,7 +35,7 @@ local opts = {
     testIters = 100,
     seq_length = 25,
     batchSize = 4,
-    grad_clip = 10,
+    grad_clip = 0,
     snapshot = 5,
     nGPU = 1,
     continue = 'false',

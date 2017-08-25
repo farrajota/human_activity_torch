@@ -1,5 +1,5 @@
 --[[
-    Test loading the kps (body joints predictor) networks (LSTM + ConvNet3D).
+    Test loading the hms (body joints predictor) networks (LSTM + ConvNet3D).
 ]]
 
 require 'torch'
@@ -29,19 +29,19 @@ opt.seq_length = 20
 opt.GPU = 1
 opt.nGPU = 1
 
-local nets = {'kps-lstm', 'kps-convnet3d'}
+local nets = {'hms-lstm', 'hms-convnet3d'}
 for k, netType in ipairs(nets) do
     opt.netType = netType
     print(('\nLoad network: %s [%d/%d]'):format(netType, k, #nets))
 
-    local model_features, model_kps, model_classifier, criterion, params = paths.dofile('../model.lua')
+    local model_features, model_hms, model_classifier, criterion, params = paths.dofile('../model.lua')
     opt.params = params
 
     print('==> Features network:')
     print(model_features)
 
-    print('==> kps network:')
-    print(model_kps)
+    print('==> hms network:')
+    print(model_hms)
 
     print('==> Classifier network:')
     print(model_classifier)
@@ -56,7 +56,7 @@ for k, netType in ipairs(nets) do
         local seq_feats = {}
         for i=1, opt.seq_length  do
             local img =  torch.Tensor(1,3,256,256):uniform():cuda()
-            local features = model_kps:forward(img)
+            local features = model_hms:forward(img)
             table.insert(seq_feats, features)
         end
         -- convert table into a single tensor

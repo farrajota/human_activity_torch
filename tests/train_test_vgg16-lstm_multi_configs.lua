@@ -101,7 +101,7 @@ local test_opts = {
     {expID = 'vgg16-lstm-test7', seq_length = 10, batchSize = 16},
     {expID = 'vgg16-lstm-test8', seq_length = 20, batchSize = 16},
     {expID = 'vgg16-lstm-test9', seq_length = 30, batchSize = 16},  -- best: seq=30 + batchsize=16
-    --{expID = 'vgg16-lstm-test10', seq_length = 10, batchSize = 32},
+    --{expID = 'vgg16-lstm-test10', seq_length = 10, batchSize = 32},  --
     --{expID = 'vgg16-lstm-test11', seq_length = 20, batchSize = 32},
     --{expID = 'vgg16-lstm-test12', seq_length = 30, batchSize = 32},
 
@@ -148,7 +148,7 @@ for i, test_opt in ipairs(test_opts) do
     end
 
     -- train network
-    exec_command(('th train.lua %s'):format(str_args))
+    --exec_command(('th train.lua %s'):format(str_args))
 
     -- test network
     exec_command(('th test.lua %s'):format(str_args))
