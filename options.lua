@@ -74,6 +74,11 @@ local function Parse(arg)
 
 
     local opt = cmd:parse(arg or {})
+
+    if not utils then
+        utils = paths.dofile('util/utils.lua')
+    end
+
     opt.continue       = utils.Str2Bool(opt.continue)
     opt.clear_buffers  = utils.Str2Bool(opt.clear_buffers)
     opt.convert_cudnn  = utils.Str2Bool(opt.convert_cudnn)
@@ -95,10 +100,6 @@ local function Parse(arg)
         end
     else
         opt.load = opt.loadModel
-    end
-
-    if not utils then
-        utils = paths.dofile('util/utils.lua')
     end
 
     if string.lower(opt.data_dir) == 'none' then
