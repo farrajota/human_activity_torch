@@ -7,7 +7,7 @@ if not utils then utils = paths.dofile('utils.lua') end
 
 ------------------------------------------------------------------------------------------------------------
 
-local function store(model_feats, model_kps, model_cls, optimState, epoch, opt, flag)
+local function store(model_feats, model_hms, model_cls, optimState, epoch, opt, flag)
     local filename_model, filename_optimstate
     if flag then
         filename_model = paths.concat(opt.save,'model_' .. epoch ..'.t7')
@@ -22,10 +22,10 @@ local function store(model_feats, model_kps, model_cls, optimState, epoch, opt, 
     torch.save(paths.concat(opt.save,'last_epoch.t7'), epoch)
     if opt.clear_buffers then
         if model_feats then model_feats:clearState() end
-        if model_kps then model_kps:clearState() end
+        if model_hms then model_hms:clearState() end
         model_cls:clearState()
     end
-    torch.save(filename_model, {model_feats, model_kps, model_cls, opt.params})
+    torch.save(filename_model, {model_feats, model_hms, model_cls, opt.params})
 
     -- make a symlink to the last trained model
     local filename_symlink = paths.concat(opt.save,'model_final.t7')
@@ -37,28 +37,28 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
-function storeModel(model_feats, model_kps, model_cls, optimState, epoch, opt)
+function storeModel(model_feats, model_hms, model_cls, optimState, epoch, opt)
 --[[ store model snapshot ]]
 
     if opt.snapshot > 0 then
         if epoch%opt.snapshot == 0 then
-           store(model_feats, model_kps, model_cls, optimState, epoch, opt, true)
+           store(model_feats, model_hms, model_cls, optimState, epoch, opt, true)
         end
     elseif opt.snapshot < 0 then
         if epoch%math.abs(opt.snapshot) == 0 then
-           store(model_feats, model_kps, model_cls, optimState, epoch, opt, false)
+           store(model_feats, model_hms, model_cls, optimState, epoch, opt, false)
         end
     else
         -- save only at the last epoch
         if epoch == opt.nEpochs then
-          store(model_feats, model_kps, model_cls, optimState, epoch, opt, false)
+          store(model_feats, model_hms, model_cls, optimState, epoch, opt, false)
         end
     end
 end
 
 ------------------------------------------------------------------------------------------------------------
 
-function storeModelBest(model_feats, model_kps, model_cls, opt)
+function storeModelBest(model_feats, model_hms, model_cls, opt)
 --[[ store model snapshot of the best model]]
 
     local filename_model = paths.concat(opt.save, 'best_model_accuracy.t7')
@@ -67,8 +67,8 @@ function storeModelBest(model_feats, model_kps, model_cls, opt)
 
     if opt.clear_buffers then
         if model_feats then model_feats:clearState() end
-        if model_kps then model_kps:clearState() end
+        if model_hms then model_hms:clearState() end
         model_cls:clearState()
     end
-    torch.save(filename_model, {model_feats, model_kps, model_cls, opt.params})
+    torch.save(filename_model, {model_feats, model_hms, model_cls, opt.params})
 end

@@ -80,7 +80,7 @@ To train a network, there are several input arguments to configure the training 
 - `-dataset <dataset_name>`: indicates which dataset to train on (default=`ucf_sports`); **(warning: for now, the ucf_sports is the only available dataset to train/test on)**
 - `-data_dir <path/to/dataset/files>`: Path to store the dataset\'s data files in case you haven't configured the `ucf_sports` previously in `dbcollection`. Specify a path if you want to store the data files into a specific folder.
 - `-expDir <path/to/folder>`: specifies which folder to store the experiment directory. By default, it uses the `exp/` dir in the repo's main directory. (optional)
-- `-netType <net_type_name>`: specifies which network to train. Options: vgg16-lstm | kps-lstm | vgg16-kps-lstm | vgg16-convnet | kps-convnet | vgg16-kps-convnet.
+- `-netType <net_type_name>`: specifies which network to train. Options: vgg16-lstm | hms-lstm | vgg16-hms-lstm | vgg16-convnet | hms-convnet | vgg16-hms-convnet.
 - `-trainIters <num_iters>`: Number of train iterations per epoch (default=300).
 - `-testIters <num_iters>`: Number of test iterations per epoch (default=100).
 - `-nEpochs <num_epochs>`: Total number of epochs to runh (default=15).

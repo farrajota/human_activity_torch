@@ -164,27 +164,27 @@ function load_model(mode)
     local str = string.lower(mode)
     if str == 'train' then
         -- Load model
-        model_features, model_kps, model_classifier, criterion = paths.dofile('model.lua')
+        model_features, model_hms, model_classifier, criterion = paths.dofile('model.lua')
 
         if model_features then model_features:evaluate() end
-        if model_kps then model_kps:evaluate() end
+        if model_hms then model_hms:evaluate() end
         model_classifier:training()
     elseif str == 'test' then
         -- load model
         print('Loading models from file: ' .. opt.load)
-        model_features, model_kps, model_classifier, opt.params = unpack(torch.load(opt.load))
+        model_features, model_hms, model_classifier, opt.params = unpack(torch.load(opt.load))
 
         if opt.GPU >= 1 then
             opt.dataType = 'torch.CudaTensor'  -- Use GPU
             if model_features then model_features:cuda() end
-            if model_kps then model_kps:cuda() end
+            if model_hms then model_hms:cuda() end
             model_classifier:cuda()
 
             -- convert to cuda
             if pcall(require, 'cudnn') then
                 print('Converting model features+classifier backend to cudnn...')
                 if model_features then cudnn.convert(model_features, cudnn):cuda() end
-                if model_kps then cudnn.convert(model_kps, cudnn):cuda() end
+                if model_hms then cudnn.convert(model_hms, cudnn):cuda() end
                 cudnn.convert(model_classifier, cudnn):cuda()
                 print('Done.')
             end
@@ -194,9 +194,9 @@ function load_model(mode)
                     model_features = utils.loadDataParallel(model_features, 1)
                 end  -- load model into 1 GPU
             end
-            if model_kps then
+            if model_hms then
                 if torch.type(model_features) == 'nn.DataParallelTable' then
-                    model_kps = utils.loadDataParallel(model_kps, 1)
+                    model_hms = utils.loadDataParallel(model_hms, 1)
                 end  -- load model into 1 GPU
             end
         else
@@ -206,7 +206,7 @@ function load_model(mode)
         end
 
         if model_features then model_features:evaluate() end
-        if model_kps then model_kps:evaluate() end
+        if model_hms then model_hms:evaluate() end
         model_classifier:evaluate()
     else
         error(('Invalid mode: %s. mode must be either \'train\' or \'test\''):format(mode))
