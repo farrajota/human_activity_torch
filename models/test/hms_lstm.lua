@@ -15,13 +15,15 @@ require 'nn'
 local function load_features_network()
     local filepath = paths.concat(projectDir, 'data', 'pretrained_models')
     local hg_net = torch.load(paths.concat(filepath, 'hg-best.t7'))
+    local nparts = 14
+
     local net = nn.Sequential()
     net:add(hg_net)
     net:add(nn.SelectTable(-1))
-    net:add(nn.View(-1, 11*64*64))
+    net:add(nn.View(-1, nparts*64*64))
     local params = {
-      dims = {11, 64, 64},
-      feat_size = 11 * 64 * 64
+      dims = {nparts, 64, 64},
+      feat_size = nparts * 64 * 64
     }
     return net, params
 end
