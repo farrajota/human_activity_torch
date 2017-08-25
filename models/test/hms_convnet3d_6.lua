@@ -1,29 +1,11 @@
 --[[
-    Load Kps + ConvNet (5d conv + lin layer) networks.
+    Load hms + ConvNet (5d conv + lin layer) networks.
 ]]
 
 
 
 require 'nn'
 
-
-------------------------------------------------------------------------------------------------------------
-
-local function load_features_network()
-    local filepath = paths.concat(projectDir, 'data', 'pretrained_models')
-    local hg_net = torch.load(paths.concat(filepath, 'hg-best.t7'))
-    local nparts = 14
-
-    local net = nn.Sequential()
-    net:add(hg_net)
-    net:add(nn.SelectTable(-1))
-    local params = {
-      pixel_scale = 1,
-      dims = {nparts, 64, 64},
-      feat_size = nparts
-    }
-    return net, params
-end
 
 ------------------------------------------------------------------------------------------------------------
 
@@ -52,8 +34,8 @@ end
 --[[ Create VGG16 + spatial average pooling + lin layer ]]--
 local function create_network()
 
-    local kps_features, params = load_features_network()
-    kps_features:evaluate()
+    local hms_features, params = paths.dofile('../load_hg_best.lua')()
+    hms_features:evaluate()
 
     local classifier = load_classifier_network(params.feat_size,
                                                opt.nFeats,
@@ -61,7 +43,7 @@ local function create_network()
                                                opt.nLayers,
                                                opt.seq_length)
 
-    return nil, kps_features, classifier, params  -- features, kps, classifier, params
+    return nil, hms_features, classifier, params  -- features, hms, classifier, params
 end
 
 ------------------------------------------------------------------------------------------------------------
