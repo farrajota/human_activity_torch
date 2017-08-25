@@ -67,7 +67,7 @@ for i=1, niters do
         a=1  -- stop debugger here
     end
     local idx = torch.random(1, loader.num_videos)
-    local input_kps, input_feats, label = getSampleTest(loader, idx)
+    local input_hms, input_feats, label = getSampleTest(loader, idx)
     xlua.progress(i, niters)
 end
 
