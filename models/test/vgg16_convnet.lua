@@ -9,29 +9,6 @@ require 'nn'
 
 ------------------------------------------------------------------------------------------------------------
 
-local function load_features_network()
-    local filepath = paths.concat(projectDir, 'data', 'pretrained_models')
-
-    local net = torch.load(paths.concat(filepath, 'model_vgg16.t7'))
-    local params = torch.load(paths.concat(filepath, 'parameters_vgg16.t7'))
-
-    net:remove(net:size()) -- remove logsoftmax layer
-    net:remove(net:size()) -- remove 3rd linear layer
-    net:remove(net:size()) -- remove 2nd dropout layer
-    net:remove(net:size()) -- remove 2nd last relu layer
-    net:remove(net:size()) -- remove 2nd linear layer
-    net:remove(net:size()) -- remove 1st dropout layer
-    net:remove(net:size()) -- remove 1st relu layer
-    net:remove(net:size()) -- remove 1st linear layer
-    net:remove(net:size()) -- remove view layer
-
-    params.feat_size = 512
-
-    return net, params
-end
-
-------------------------------------------------------------------------------------------------------------
-
 local function load_classifier_network(input_size, num_feats, num_activities, num_layers, seq_length)
     local classifier = nn.Sequential()
     classifier:add(nn.Unsqueeze(2))   -- add singleton to dim2 such that input = B x 1 x seq_length x input_size
@@ -62,7 +39,7 @@ end
 --[[ Create VGG16 + spatial average pooling + lin layer ]]--
 local function create_network()
 
-    local features, params = load_features_network()
+    local features, params = paths.dofile('../load_vgg16.lua')(true)
     features:evaluate()
 
     local classifier = load_classifier_network(params.feat_size,
@@ -71,7 +48,7 @@ local function create_network()
                                                opt.nLayers,
                                                opt.seq_length)
 
-    return features, nil, classifier, params  -- features, kps, classifier, params
+    return features, nil, classifier, params  -- features, hms, classifier, params
 end
 
 ------------------------------------------------------------------------------------------------------------
