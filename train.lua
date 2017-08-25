@@ -25,7 +25,7 @@ load_model('train')
 utils.print_model_to_txt(paths.concat(opt.save, 'architecture.txt'),
                          {
                              {'==> Features network:', model_features},
-                             {'==> Body Joint kps network:', model_kps},
+                             {'==> Body Joint hms network:', model_hms},
                              {'==> Classifier network:', model_classifier}
                          })
 
@@ -73,9 +73,9 @@ local function getIterator(mode)
             return tnt.ListDataset{
                 list = torch.range(1, nIters):long(),
                 load = function(idx)
-                    local input_kps, input_feats, label = getSampleBatch(loader, opt.batchSize, mode=='train')
+                    local input_hms, input_feats, label = getSampleBatch(loader, opt.batchSize, mode=='train')
                     return {
-                        input_kps = input_kps,
+                        input_hms = input_hms,
                         input_feats = input_feats,
                         target = label
                     }
@@ -183,10 +183,10 @@ engine.hooks.onSample = function(state)
     --------
 
 
-    local inputs_features, inputs_kps = {}, {}
-    if model_kps and model_features then
+    local inputs_features, inputs_hms = {}, {}
+    if model_hms and model_features then
         inputs_features = process_inputs(model_features, state.sample.input_feats[1])
-        inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
+        inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
     else
         local batch_features = {}
         for ibatch=1, num_batches do
@@ -196,12 +196,12 @@ engine.hooks.onSample = function(state)
         end
         inputs_features = vgg_feats
     end
-    if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'kps') then
-        state.sample.input = {inputs_features, inputs_kps}
+    if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'hms') then
+        state.sample.input = {inputs_features, inputs_hms}
     elseif string.find(opt.netType, 'vgg16') then
         state.sample.input = inputs_features
-    elseif string.find(opt.netType, 'kps') then
-        state.sample.input = inputs_kps
+    elseif string.find(opt.netType, 'hms') then
+        state.sample.input = inputs_hms
     else
         error('Invalid network type: ' .. opt.netType)
     end
@@ -322,7 +322,7 @@ engine.hooks.onEndEpoch = function(state)
     -- save model snapshots to disk
     --------------------------------
 
-    storeModel(model_features, model_kps, state.network, state.config, state.epoch, opt)
+    storeModel(model_features, model_hms, state.network, state.config, state.epoch, opt)
 
     ------------------------------------
     -- save best accuracy model to disk
@@ -330,7 +330,7 @@ engine.hooks.onEndEpoch = function(state)
 
     if accuracy_top1 > test_best_accu and opt.saveBest then
         test_best_accu = accuracy_top1
-        storeModelBest(model_features, model_kps, state.network, opt)
+        storeModelBest(model_features, model_hms, state.network, opt)
     end
 
     timers.epochTimer:reset()

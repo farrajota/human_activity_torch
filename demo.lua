@@ -34,8 +34,8 @@ for ivideo, video_idx in ipairs(video_ids) do
     print((' > Processing Video %d/%d: '):format(ivideo, #video_ids))
 
     print('   - Fetch video image sequence...')
-    local input_kps, input_feats, label = getSampleTest(loader, idx)
-    local num_imgs_seq = input_kps:size(2)
+    local input_hms, input_feats, label = getSampleTest(loader, idx)
+    local num_imgs_seq = input_hms:size(2)
 
     -- process images features
     local inputs_features = {}
@@ -53,27 +53,27 @@ for ivideo, video_idx in ipairs(video_ids) do
     end
 
     -- process images body joints
-    local inputs_kps = {}
-    if model_kps then
+    local inputs_hms = {}
+    if model_hms then
         print('   - Process image body joints...')
         for i=1, num_imgs_seq do
-            local img =  input_kps[1][i]
+            local img =  input_hms[1][i]
             local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
-            local kps = model_kps:forward(img_cuda)
-            table.insert(inputs_kps, kps)
+            local hms = model_hms:forward(img_cuda)
+            table.insert(inputs_hms, hms)
         end
         -- convert table into a single tensor
-        inputs_kps = nn.JoinTable(1):cuda():forward(inputs_kps)
-        inputs_kps = nn.Unsqueeze(1):cuda():forward(inputs_kps)
+        inputs_hms = nn.JoinTable(1):cuda():forward(inputs_hms)
+        inputs_hms = nn.Unsqueeze(1):cuda():forward(inputs_hms)
     end
 
     local input
-    if model_features and model_kps then
-        input = {inputs_features, inputs_kps}
+    if model_features and model_hms then
+        input = {inputs_features, inputs_hms}
     elseif model_features then
         input = inputs_features
-    elseif model_kps then
-        input = inputs_kps
+    elseif model_hms then
+        input = inputs_hms
     else
         error('Invalid network type: ' .. opt.netType)
     end
@@ -94,8 +94,8 @@ for ivideo, video_idx in ipairs(video_ids) do
     print('   - Plot results to browser')
     local top_n = 5  -- top5
     local state_win
-    for i=1, input_kps:size(2) do
-        local img = input_kps[1][i]
+    for i=1, input_hms:size(2) do
+        local img = input_hms[1][i]
 
         -- fetch top-5 classification results
         local sorted_results, sorted_idx = torch.sort(result, true)

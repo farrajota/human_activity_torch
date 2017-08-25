@@ -263,7 +263,7 @@ function getSampleBatch(data_loader, batchSize, is_train)
     local sample = get_batch(data_loader, batchSize, is_train)
 
     -- images (for body joints)
-    local imgs_kps = torch.FloatTensor(batchSize, opt.seq_length,
+    local imgs_hms = torch.FloatTensor(batchSize, opt.seq_length,
                                        3, opt.inputRes, opt.inputRes):fill(0)
     for i=1, batchSize do
         local prev_sample = sample[i][1][1]
@@ -274,7 +274,7 @@ function getSampleBatch(data_loader, batchSize, is_train)
             else
                 sample_ = prev_sample
             end
-            imgs_kps[i][j]:copy(sample_)
+            imgs_hms[i][j]:copy(sample_)
         end
     end
 
@@ -302,7 +302,7 @@ function getSampleBatch(data_loader, batchSize, is_train)
 
     collectgarbage()
 
-    return imgs_kps, imgs_feats, labels_tensor
+    return imgs_hms, imgs_feats, labels_tensor
 end
 
 
@@ -325,11 +325,11 @@ function getSampleTest(data_loader, idx)
     end
 
     -- images data
-    local imgs_kps = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0)
+    local imgs_hms = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0)
     local imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0)
     local ini_id = 1
     for j=1, seq_length do
-        imgs_kps[1][j]:copy(sample[1][ini_id])
+        imgs_hms[1][j]:copy(sample[1][ini_id])
         imgs_feats[1][j]:copy(sample[2][ini_id])
         ini_id = ini_id + 1
         if ini_id > sample_seq_length then
@@ -342,5 +342,5 @@ function getSampleTest(data_loader, idx)
 
     collectgarbage()
 
-    return imgs_kps, imgs_feats, labels_tensor
+    return imgs_hms, imgs_feats, labels_tensor
 end

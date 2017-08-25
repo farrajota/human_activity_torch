@@ -59,9 +59,9 @@ local function getIterator(mode)
             return tnt.ListDataset{
                 list = torch.range(1, nSamples):long(),
                 load = function(idx)
-                    local input_kps, input_feats, label = getSampleTest(loader, idx)
+                    local input_hms, input_feats, label = getSampleTest(loader, idx)
                     return {
-                        input_kps = input_kps,
+                        input_hms = input_hms,
                         input_feats = input_feats,
                         target = label
                     }
@@ -136,17 +136,17 @@ engine.hooks.onSample = function(state)
     ------
 
     local inputs_features = process_inputs(model_features, state.sample.input_feats[1])
-    local inputs_kps = process_inputs(model_kps, state.sample.input_kps[1])
+    local inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
 
 
     targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])
 
-    if model_features and model_kps then
-        state.sample.input = {inputs_features, inputs_kps}
+    if model_features and model_hms then
+        state.sample.input = {inputs_features, inputs_hms}
     elseif model_features then
         state.sample.input = inputs_features
-    elseif model_kps then
-        state.sample.input = inputs_kps
+    elseif model_hms then
+        state.sample.input = inputs_hms
     else
         error('Invalid network type: ' .. opt.netType)
     end
