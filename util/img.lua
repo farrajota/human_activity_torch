@@ -130,9 +130,25 @@ function crop2(img, center, scale, rot, res)
     return newImg
 end
 
+------------------------------------------------------------------------------------------------------------
 
 function random_crop(img, width, height, iW, iH)
     return img[{{}, {iW, iW+width -1}, {iH, iH + height -1}}]
+end
+
+------------------------------------------------------------------------------------------------------------
+
+function resize_image(input, size, interpolation)
+    local interpolation = interpolation or 'bicubic'
+    local w, h = input:size(3), input:size(2)
+    if (w <= h and w == size) or (h <= w and h == size) then
+        return input
+    end
+    if w < h then
+        return image.scale(input, size, h/w * size, interpolation)
+    else
+        return image.scale(input, w/h * size, size, interpolation)
+    end
 end
 
 
