@@ -181,16 +181,22 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
 
 
     -- images for global feature extractiong
+    local imgs_resized = {}
     local iW, iH
+    local img_size = torch.random(224,256)
     for i=1, #imgs do
-        local new_img = resize_image(imgs[i], 256)
+        if  not opt.same_transform then
+            img_size = torch.random(224,256)
+        end
+
+        local new_img = resize_image(imgs[i].img, img_size)
 
         if (iW == nil or iH == nil) or not opt.same_transform then
-            iW, iH = torch.random(1, new_img:size(3) - 224), torch.random(1, new_img:size(2) - 224)
+            iW, iH = torch.random(1, math.max(1, new_img:size(3) - 224)), torch.random(1, math.max(1,new_img:size(2) - 224))
         end
-        new_img = img[{{}, {iW, iW+224 -1}, {iH, iH + 224 -1}}]
+        new_img = new_img[{{}, {iH, iH+224 -1}, {iW, iW + 224 -1}}]
 
-        -- convert bo bgr
+        -- convert to bgr
         if opt.params.colourspace == 'bgr' then
             new_img = new_img:index(1, torch.LongTensor{3,2,1})  -- bgr
         end
