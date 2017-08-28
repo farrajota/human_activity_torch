@@ -143,7 +143,6 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
     -- select some random transformations to apply to the entire set of images
     local params_transform = get_random_transforms(is_train)
 
-
     local imgs_transf = {}
     local prev_center, prev_scale = imgs[1].center, imgs[1].scale
     local prev_bbox = imgs[1].bbox
@@ -165,6 +164,10 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
             imgs[i].scale = prev_scale
         end
 
+        if not opt.same_transform then
+            params_transform = get_random_transforms(is_train)
+        end
+
         local new_img = transform_data(imgs[i], params_transform)
         if not new_img then return {} end  -- skip this round of data/transforms if any error occurs
         table.insert(imgs_transf, new_img)
@@ -176,6 +179,38 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
         end
     end
 
+
+    -- images for global feature extractiong
+    local iW, iH
+    for i=1, #imgs do
+        local new_img = resize_image(imgs[i], 256)
+
+        if (iW == nil or iH == nil) or not opt.same_transform then
+            iW, iH = torch.random(1, new_img:size(3) - 224), torch.random(1, new_img:size(2) - 224)
+        end
+        new_img = img[{{}, {iW, iW+224 -1}, {iH, iH + 224 -1}}]
+
+        -- convert bo bgr
+        if opt.params.colourspace == 'bgr' then
+            new_img = new_img:index(1, torch.LongTensor{3,2,1})  -- bgr
+        end
+
+        -- rescale pixels
+        if opt.params.pixel_scale > 1 then
+            new_img:mul(opt.params.pixel_scale)
+        end
+
+        -- normalize pixels
+        for i=1, 3 do
+            if opt.params.mean then new_img[i]:add(-opt.params.mean[i]) end
+            if opt.params.std then new_img[i]:div(opt.params.std[i]) end
+        end
+
+        table.insert(imgs_resized, new_img)
+    end
+
+
+    --[[
     -- Resize images (vgg16)
     local iW, iH = torch.random(1, opt.inputRes - 224), torch.random(1, opt.inputRes - 224)
     local imgs_resized = {}
@@ -184,6 +219,7 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
         if torch.random() > 0.5 then
             new_img = image.scale(new_img, 224, 224)
         else
+            new_img = img[{{}, {iW, iW+224 -1}, {iH, iH + 224 -1}}]
             new_img = random_crop(new_img, 224, 224, iW, iH)
         end
 
@@ -203,6 +239,7 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
 
         table.insert(imgs_resized, new_img)
     end
+    --]]
 
     return {imgs_transf, imgs_resized, label}
 end
