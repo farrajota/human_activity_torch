@@ -27,7 +27,7 @@ end
 --[[ Create VGG16 + LSTM ]]--
 local function create_network()
 
-    local features, params = paths.dofile('../load_hg_best.lua')(true)
+    local features, params = paths.dofile('../load_vgg16.lua')(true)
     features:evaluate()
 
     local lstm = load_classifier_network(params.feat_size,

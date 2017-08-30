@@ -3,7 +3,7 @@
 ]]
 
 local function load_network(conv_layers_only)
-    local conv_layers_only = conv_layers_only of false
+    local conv_layers_only = conv_layers_only or false
 
     local filepath = paths.concat(projectDir, 'data', 'pretrained_models')
 
