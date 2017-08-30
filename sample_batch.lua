@@ -73,9 +73,9 @@ local function get_random_transforms(is_train)
         end
 
         -- color augmentation
-        color_jit = {torch.uniform(0.6, 1.4),
-                     torch.uniform(0.6, 1.4),
-                     torch.uniform(0.6, 1.4)}
+        color_jit = {torch.uniform(1-opt.colorjit, 1+opt.colorjit),
+                     torch.uniform(1-opt.colorjit, 1+opt.colorjit),
+                     torch.uniform(1-opt.colorjit, 1+opt.colorjit)}
     end
 
     return {
