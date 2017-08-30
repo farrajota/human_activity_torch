@@ -21,8 +21,11 @@ opt.dataset = 'ucf_sports'
 opt.rotate = 15
 opt.scale = 0.2
 opt.rotRate = 0.5
-opt.batchSize = 2
-opt.seq_length = 30
+opt.batchSize = 4
+opt.seq_length = 15
+opt.same_transform = true
+opt.process_input_heatmap = true
+opt.process_input_feats = false
 niters = 1000
 mode = 'train'
 plot_results = false
@@ -37,7 +40,7 @@ for i=1, niters do
     if i==183 then
         a=1  -- stop debugger here
     end
-    local input, label = getSampleBatch(loader, opt.batchSize, true)
+    local input, imgs_feats, label = getSampleBatch(loader, opt.batchSize, true)
 
     if plot_results then
         a = {}
@@ -46,6 +49,9 @@ for i=1, niters do
           print('label: ' .. label[ibatch])
         end
     end
+
+    collectgarbage()
+
     xlua.progress(i, niters)
 end
 
@@ -55,19 +61,9 @@ for i=1, niters do
     if i==183 then
         a=1  -- stop debugger here
     end
-    local input, label = getSampleBatch(loader, opt.batchSize, false)
-    xlua.progress(i, niters)
-end
+    local input, imgs_feats, label  = getSampleBatch(loader, opt.batchSize, false)
 
-
-print('==> Train data samples (test)')
-for i=1, niters do
-    --print(('Iter %d/%d'):format(i, niters))
-    if i==183 then
-        a=1  -- stop debugger here
-    end
-    local idx = torch.random(1, loader.num_videos)
-    local input_hms, input_feats, label = getSampleTest(loader, idx)
+    collectgarbage()
     xlua.progress(i, niters)
 end
 
