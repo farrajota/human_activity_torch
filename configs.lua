@@ -211,4 +211,9 @@ function load_model(mode)
     else
         error(('Invalid mode: %s. mode must be either \'train\' or \'test\''):format(mode))
     end
+    
+    if model_features then opt.process_input_feats = true
+    else opt.process_input_feats = false end
+    if model_hms then opt.process_input_heatmap = true
+    else opt.process_input_heatmap = false end
 end
