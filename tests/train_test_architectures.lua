@@ -90,21 +90,21 @@ end
 
 local test_opts = {
     -- lstm
-    --{expID = 'architecture-test1', netType = 'vgg16-lstm'},
-    --{expID = 'architecture-test2', netType = 'vgg16-lstm2'},
-    --{expID = 'architecture-test3', netType = 'kps-lstm'},
-    --{expID = 'architecture-test4', netType = 'vgg16-kps-lstm'},
+    {expID = 'architecture-test1', netType = 'vgg16-lstm'},
+    {expID = 'architecture-test2', netType = 'vgg16-lstm2'},
+    {expID = 'architecture-test3', netType = 'hms-lstm'},
+    {expID = 'architecture-test4', netType = 'vgg16-hms-lstm'},
 
     -- convnet 3D
-    --{expID = 'architecture-test5', netType = 'vgg16-convnet3d'},
-    --{expID = 'architecture-test6', netType = 'vgg16-convnet3d_2'},
-    --{expID = 'architecture-test7', netType = 'kps-convnet3d'},
-    --{expID = 'architecture-test8', netType = 'kps-convnet3d_2'},
-    --{expID = 'architecture-test9', netType = 'kps-convnet3d_3', convert_cudnn = 'false'},
-    --{expID = 'architecture-test10', netType = 'kps-convnet3d_4', convert_cudnn = 'false'},
-    {expID = 'architecture-test11', netType = 'kps-convnet3d_8', convert_cudnn = 'true'},
-    {expID = 'architecture-test12', netType = 'vgg16-kps-convnet3d', convert_cudnn = 'false'},
-    {expID = 'architecture-test13', netType = 'vgg16-kps-convnet3d_2', convert_cudnn = 'false'},
+    {expID = 'architecture-test5', netType = 'vgg16-convnet3d'},
+    {expID = 'architecture-test6', netType = 'vgg16-convnet3d_2'},
+    {expID = 'architecture-test7', netType = 'hms-convnet3d'},
+    {expID = 'architecture-test8', netType = 'hms-convnet3d_2'},
+    {expID = 'architecture-test9', netType = 'hms-convnet3d_3', convert_cudnn = 'false'},
+    {expID = 'architecture-test10', netType = 'hms-convnet3d_4', convert_cudnn = 'false'},
+    {expID = 'architecture-test11', netType = 'hms-convnet3d_8', convert_cudnn = 'true'},
+    {expID = 'architecture-test12', netType = 'vgg16-hms-convnet3d', convert_cudnn = 'false'},
+    {expID = 'architecture-test13', netType = 'vgg16-hms-convnet3d_2', convert_cudnn = 'false'},
 }
 
 for i, test_opt in ipairs(test_opts) do
