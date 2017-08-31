@@ -26,6 +26,7 @@ opt.seq_length = 15
 opt.same_transform = true
 opt.process_input_heatmap = true
 opt.process_input_feats = false
+opt.use_center_crop = true
 niters = 1000
 mode = 'train'
 plot_results = false
@@ -37,7 +38,7 @@ local loader = data_loader[mode]
 print('==> Train data samples (with transforms)')
 for i=1, niters do
     --print(('Iter %d/%d'):format(i, niters))
-    if i==183 then
+    if i==58 then
         a=1  -- stop debugger here
     end
     local input, imgs_feats, label = getSampleBatch(loader, opt.batchSize, true)
