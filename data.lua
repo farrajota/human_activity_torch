@@ -64,6 +64,10 @@ local function loader_ucf_sports(set_name)
             local center = torch.FloatTensor{(bbox[1]+bbox[3])/2, (bbox[2]+bbox[4])/2}
             local scale = (bbox[4]-bbox[2]) / 200 * 1.25
 
+            if scale < 0 then
+                scale = 1.25
+            end
+
             table.insert(imgs, {img = img,
                                 center = center,
                                 scale = scale,
