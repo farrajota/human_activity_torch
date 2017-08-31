@@ -12,12 +12,21 @@ local function additional_network_architectures(network_list)
     network_list['vgg16-hms-lstm'] = paths.dofile('vgg16_hms_lstm.lua')
     network_list['hms-lstm'] = paths.dofile('hms_lstm.lua')
 
+    network_list['vgg16-hms-lstm-v1'] = paths.dofile('vgg16_hms_lstm_v1.lua')
+    network_list['vgg16-hms-lstm-v2'] = paths.dofile('vgg16_hms_lstm_v2.lua')
+    network_list['vgg16-hms-lstm-v3'] = paths.dofile('vgg16_hms_lstm_v3.lua')
+
     network_list['resnet18-lstm'] = paths.dofile('resnet18_lstm.lua')
     network_list['resnet32-lstm'] = paths.dofile('resnet32_lstm.lua')
     network_list['resnet50-lstm'] = paths.dofile('resnet50_lstm.lua')
     network_list['resnet101-lstm'] = paths.dofile('resnet101_lstm.lua')
     network_list['resnet152-lstm'] = paths.dofile('resnet152_lstm.lua')
     network_list['resnet200-lstm'] = paths.dofile('resnet200_lstm.lua')
+
+    network_list['resnet50-hms-lstm-v1'] = paths.dofile('resnet50_hms_lstm_v1.lua')
+    network_list['resnet50-hms-lstm-v2'] = paths.dofile('resnet50_hms_lstm_v2.lua')
+    network_list['resnet50-hms-lstm-v3'] = paths.dofile('resnet50_hms_lstm_v3.lua')
+
 
     -- ConvNet
     network_list['vgg16-convnet'] = paths.dofile('vgg16_convnet.lua')
@@ -33,6 +42,7 @@ local function additional_network_architectures(network_list)
     network_list['hms-convnet3d_6'] = paths.dofile('hms_convnet3d_6.lua')
     network_list['hms-convnet3d_7'] = paths.dofile('hms_convnet3d_7.lua')
     network_list['hms-convnet3d_8'] = paths.dofile('hms_convnet3d_8.lua')
+
 end
 
 return additional_network_architectures
