@@ -186,6 +186,7 @@ engine.hooks.onSample = function(state)
     if model_hms then
         inputs_features = process_inputs(model_features, state.sample.input_feats[1])
         inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
+        inputs_hms[inputs_hms:lt(0)]=0
     else
         local batch_features = {}
         for ibatch=1, opt.batchSize do
