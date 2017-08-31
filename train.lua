@@ -152,21 +152,18 @@ end
 
 -- copy sample to GPU buffer:
 local inputs, targets = cast(torch.Tensor()), cast(torch.Tensor())
-local vgg_feats = cast(torch.Tensor(opt.batchSize, opt.seq_length, 4096))
+local input_features
 engine.hooks.onSample = function(state)
     cutorch.synchronize(); collectgarbage();
-
-    local num_batches = state.sample.input_feats[1]:size(1)
-    local num_imgs_seq = state.sample.input_feats[1]:size(2)
 
     --------
     local function process_inputs(model, input)
         local features = {}
         if model then
             local batch_feats_imgs = {}
-            for ibatch=1, num_batches do
+            for ibatch=1, opt.batchSize do
                 local seq_feats = {}
-                for i=1, num_imgs_seq do
+                for i=1, opt.seq_length do
                     local img = input[ibatch][i]
                     local img_cuda = img:view(1, unpack(img:size():totable())):cuda()  -- extra dimension for cudnn batchnorm
                     local features = model:forward(img_cuda)
@@ -178,29 +175,44 @@ engine.hooks.onSample = function(state)
             -- convert table into a single tensor
             features = nn.JoinTable(1):cuda():forward(batch_feats_imgs)
         end
+        collectgarbage()
+        collectgarbage()
         return features
     end
     --------
 
 
     local inputs_features, inputs_hms = {}, {}
-    if model_hms and model_features then
+    if model_hms then
         inputs_features = process_inputs(model_features, state.sample.input_feats[1])
         inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
+        inputs_hms[inputs_hms:lt(0)]=0
     else
         local batch_features = {}
-        for ibatch=1, num_batches do
+        for ibatch=1, opt.batchSize do
             inputs:resize(state.sample.input_feats[1][ibatch]:size() ):copy(state.sample.input_feats[1][ibatch])
             local features = model_features:forward(inputs)
-            vgg_feats[ibatch]:copy(features)
+            if not input_features then
+                input_features = cast(torch.Tensor(opt.batchSize, unpack(features:size():totable())))
+            end
+            input_features[ibatch]:copy(features)
         end
-        inputs_features = vgg_feats
+        inputs_features = input_features
+        collectgarbage()
+        collectgarbage()
     end
-    if string.find(opt.netType, 'vgg16') and string.find(opt.netType, 'hms') then
+
+    if opt.flatten then
+        if model_hms then
+            inputs_hms = inputs_hms:view(opt.batchSize, opt.seq_length, -1)
+        end
+    end
+
+    if model_features and model_hms then
         state.sample.input = {inputs_features, inputs_hms}
-    elseif string.find(opt.netType, 'vgg16') then
+    elseif model_features then
         state.sample.input = inputs_features
-    elseif string.find(opt.netType, 'hms') then
+    elseif model_hms then
         state.sample.input = inputs_hms
     else
         error('Invalid network type: ' .. opt.netType)
@@ -239,10 +251,10 @@ engine.hooks.onForwardCriterion = function(state)
         meters.train:add(state.criterion.output)
         meters.train_clerr:add(state.network.output,state.sample.target)
         if opt.verbose then
-            print(string.format('epoch[%d/%d][%d/%d][batch=%d] - loss: %2.4f; top-1 err: ' ..
+            print(string.format('epoch[%d/%d][%d/%d][batch=%d][seq=%d] - loss: %2.4f; top-1 err: ' ..
                                 '%2.2f; top-5 err: %2.2f; lr = %2.2e;  DataLoadingTime: %0.5f; ' ..
                                 'forward-backward time: %0.5f', state.epoch+1, state.maxepoch,
-                                state.t+1, nBatchesTrain, opt.batchSize, meters.train:value(),
+                                state.t+1, nBatchesTrain, opt.batchSize, opt.seq_length, meters.train:value(),
                                 100-meters.train_clerr:value{k = 1}, 100-meters.train_clerr:value{k = 5},
                                 state.config.learningRate, timers.dataTimer:time().real,
                                 timers.batchTimer:time().real))

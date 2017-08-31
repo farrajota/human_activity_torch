@@ -1,5 +1,5 @@
 --[[
-    Load VGG16 + LSTM network.
+    Load Resnet-50 + LSTM network.
 ]]
 
 
@@ -24,7 +24,7 @@ end
 --[[ Create VGG16 + LSTM ]]--
 local function create_network()
 
-    local features, params = paths.dofile('../load_vgg16.lua')()
+    local features, params = paths.dofile('../load_resnet.lua')('resnet50')
     features:evaluate()
 
     local lstm = load_classifier_network(params.feat_size,

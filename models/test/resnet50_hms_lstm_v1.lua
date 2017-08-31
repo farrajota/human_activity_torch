@@ -1,5 +1,7 @@
 --[[
-    Load VGG16 + LSTM network.
+    Load resnet50 + Body joints predictor + LSTM networks.
+
+    Classifier type: single lstm.
 ]]
 
 
@@ -21,18 +23,27 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
---[[ Create VGG16 + LSTM ]]--
+--[[ Create resnet50 + LSTM ]]--
 local function create_network()
 
-    local features, params = paths.dofile('../load_vgg16.lua')()
-    features:evaluate()
+    local resnet50 = paths.dofile('resnet50_lstm.lua')
+    local hms = paths.dofile('hms_lstm.lua')
 
-    local lstm = load_classifier_network(params.feat_size,
+    local resnet50_features, _, resnet50_lstm, resnet50_params = resnet50()
+    local _, hms_features, hms_lstm, hms_params = hms()
+    local hms_feat_size = hms_params.dims[1] * hms_params.dims[2] * hms_params.dims[3]
+
+    local lstm = load_classifier_network(resnet50_params.feat_size + hms_feat_size,
                                          opt.nFeats,
                                          opt.num_activities,
                                          opt.nLayers)
 
-    return features, nil, lstm, params  -- features, hms, classifier, params
+
+    local classifier = nn.Sequential()
+    classifier:add(nn.JoinTable(3))
+    classifier:add(lstm)
+
+    return resnet50_features, hms_features, classifier, resnet50_params  -- features, hms, classifier, params
 end
 
 ------------------------------------------------------------------------------------------------------------

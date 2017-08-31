@@ -1,5 +1,5 @@
 --[[
-    Train and test all architectures in models/ dir.
+    Train and test several LSTM architectures.
 ]]
 
 
@@ -7,7 +7,7 @@ require 'optim'
 local Logger = optim.Logger
 paths.dofile('../projectdir.lua')
 
-local logger_filename = paths.concat(projectDir,'exp', 'ucf_sports', 'test_architectures.log')
+local logger_filename = paths.concat(projectDir,'exp', 'ucf_sports', 'test_lstm_arch.log')
 if not paths.dirp(paths.dirname(logger_filename)) then
     print('Creating dir: ' .. paths.dirname(logger_filename))
     os.execute('mkdir -p ' .. paths.dirname(logger_filename))
@@ -60,14 +60,14 @@ local function get_configs()
 
         -- data
         inputRes = 256,
-        scale = .25,
+        scale = 0,
         rotate = 30,
         rotRate = .5,
 
         -- train options
         optMethod = 'adam',
         LR = 1e-4,
-        nThreads = 2,
+        nThreads = 4,
         nEpochs = 10,
         trainIters = 300,
         testIters = 100,
@@ -90,21 +90,10 @@ end
 
 local test_opts = {
     -- lstm
-    {expID = 'architecture-test1', netType = 'vgg16-lstm'},
-    {expID = 'architecture-test2', netType = 'vgg16-lstm2'},
-    {expID = 'architecture-test3', netType = 'hms-lstm'},
-    {expID = 'architecture-test4', netType = 'vgg16-hms-lstm'},
+    --{expID = 'lstm-test1', netType = 'vgg16-lstm'},
+    {expID = 'lstm-test2', netType = 'vgg16-lstm2', convert_cudnn = 'true'},
+    {expID = 'lstm-test3', netType = 'hms-lstm', convert_cudnn = 'true'},
 
-    -- convnet 3D
-    {expID = 'architecture-test5', netType = 'vgg16-convnet3d'},
-    {expID = 'architecture-test6', netType = 'vgg16-convnet3d_2'},
-    {expID = 'architecture-test7', netType = 'hms-convnet3d'},
-    {expID = 'architecture-test8', netType = 'hms-convnet3d_2'},
-    {expID = 'architecture-test9', netType = 'hms-convnet3d_3', convert_cudnn = 'false'},
-    {expID = 'architecture-test10', netType = 'hms-convnet3d_4', convert_cudnn = 'false'},
-    {expID = 'architecture-test11', netType = 'hms-convnet3d_8', convert_cudnn = 'true'},
-    {expID = 'architecture-test12', netType = 'vgg16-hms-convnet3d', convert_cudnn = 'false'},
-    {expID = 'architecture-test13', netType = 'vgg16-hms-convnet3d_2', convert_cudnn = 'false'},
 }
 
 for i, test_opt in ipairs(test_opts) do

@@ -1,5 +1,7 @@
 --[[
     Load VGG16 + Body joints predictor + LSTM networks.
+
+    Classifier type: add/merge two lstm+linear layer results.
 ]]
 
 

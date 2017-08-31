@@ -116,7 +116,13 @@ engine.hooks.onSample = function(state)
 
     timers.featTimer:reset()
 
-    local num_imgs_seq = state.sample.input_feats[1]:size(2)
+    local num_imgs_seq
+    if type(state.sample.input_feats[1]) == 'userdata' then
+        num_imgs_seq = state.sample.input_feats[1]:size(2)
+    else
+        num_imgs_seq = state.sample.input_hms[1]:size(2)
+    end
+
 
     ------
     local function process_inputs(model, input)
@@ -135,8 +141,11 @@ engine.hooks.onSample = function(state)
     end
     ------
 
-    local inputs_features = process_inputs(model_features, state.sample.input_feats[1])
-    local inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
+    local inputs_features, inputs_hms
+    if model_features then inputs_features = process_inputs(model_features, state.sample.input_feats[1]) end
+    if model_hms then inputs_hms = process_inputs(model_hms, state.sample.input_hms[1]) end
+    --local inputs_features = process_inputs(model_features, state.sample.input_feats[1])
+    --local inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
 
 
     targets:resize(state.sample.target[1]:size() ):copy(state.sample.target[1])

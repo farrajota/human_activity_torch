@@ -34,14 +34,14 @@ for k, netType in ipairs(nets) do
     opt.netType = netType
     print(('\nLoad network: %s [%d/%d]'):format(netType, k, #nets))
 
-    local model_features, model_kps, model_classifier, criterion, params = paths.dofile('../model.lua')
+    local model_features, model_hms, model_classifier, criterion, params = paths.dofile('../model.lua')
     opt.params = params
 
     print('==> Features network:')
     print(model_features)
 
-    print('==> kps network:')
-    print(model_kps)
+    print('==> hms network:')
+    print(model_hms)
 
     print('==> Classifier network:')
     print(model_classifier)

@@ -69,11 +69,11 @@ local function get_configs()
         -- train options
         optMethod = 'adam',
         LR = 2.5e-4,
-        nThreads = 2,
+        nThreads = 6,
         nEpochs = 10,
         trainIters = 300,
         testIters = 100,
-        seq_length = 25,
+        seq_length = 20,
         batchSize = 4,
         grad_clip = 0,
         snapshot = 0,
@@ -148,7 +148,7 @@ for i, test_opt in ipairs(test_opts) do
     end
 
     -- train network
-    --exec_command(('th train.lua %s'):format(str_args))
+    exec_command(('th train.lua %s'):format(str_args))
 
     -- test network
     exec_command(('th test.lua %s'):format(str_args))
