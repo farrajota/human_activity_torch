@@ -116,12 +116,12 @@ end
 
 -- copy sample to GPU buffer:
 local inputs, targets = cast(torch.Tensor()), cast(torch.Tensor())
+local num_imgs_seq
 engine.hooks.onSample = function(state)
     cutorch.synchronize(); collectgarbage();
 
     timers.featTimer:reset()
 
-    local num_imgs_seq
     if type(state.sample.input_feats[1]) == 'userdata' then
         num_imgs_seq = state.sample.input_feats[1]:size(2)
     else
@@ -180,9 +180,9 @@ engine.hooks.onForward= function(state)
     if opt.test_progressbar then
         xlua.progress(state.t, nSamples)
     else
-        print(('test: %5d/%-5d ' ..
+        print(('test: %5d/%-5d ' .. 'seq_length=%d   ' .. 
                 'features forward time: %.3fs, classifier forward time: %.3fs, ' ..
-                'total time: %0.3fs'):format(state.t, nSamples,
+                'total time: %0.3fs'):format(state.t, nSamples, num_imgs_seq,
                 timers.featTimer:time().real,
                 timers.clsTimer:time().real,
                 timers.totalTimer:time().real))
