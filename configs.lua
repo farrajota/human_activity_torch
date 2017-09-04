@@ -152,6 +152,7 @@ local data_loader = select_dataset_loader(opt.dataset)
 local loader = data_loader['test']
 opt.test_num_videos = loader.num_videos
 loader = data_loader['train']
+opt.activities = loader.activities
 opt.num_activities = loader.num_activities
 opt.num_videos = loader.num_videos
 

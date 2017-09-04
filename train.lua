@@ -97,6 +97,8 @@ local timers = {
 }
 
 local meters = {
+    train_conf = tnt.ConfusionMeter{k = opt.num_activities},
+    test_conf = tnt.ConfusionMeter{k = opt.num_activities},
     test = tnt.AverageValueMeter(),
     train = tnt.AverageValueMeter(),
     train_clerr = tnt.ClassErrorMeter{topk = {1,5},accuracy=true},
@@ -105,6 +107,8 @@ local meters = {
 }
 
 function meters:reset()
+    self.train_conf:reset()
+    self.test_conf:reset()
     self.test:reset()
     self.train:reset()
     self.train_clerr:reset()
@@ -116,15 +120,22 @@ local loggers = {
     test = Logger(paths.concat(opt.save,'test.log'), opt.continue),
     train = Logger(paths.concat(opt.save,'train.log'), opt.continue),
     full_train = Logger(paths.concat(opt.save,'full_train.log'), opt.continue),
+    
+    train_conf = Logger(paths.concat(opt.save, 'train_confusion.log'), opt.continue),
+    test_conf = Logger(paths.concat(opt.save, 'test_confusion.log'), opt.continue),
 }
 
 loggers.test:setNames{'Test Loss', 'Test acc.', 'Test mAP'}
 loggers.train:setNames{'Train Loss', 'Train acc.'}
 loggers.full_train:setNames{'Train Loss', 'Train accuracy'}
+loggers.train_conf:setNames{'Train confusion matrix'}
+loggers.test_conf:setNames{'Test confusion matrix'}
 
 loggers.test.showPlot = false
 loggers.train.showPlot = false
 loggers.full_train.showPlot = false
+loggers.train_conf.showPlot = false
+loggers.test_conf.showPlot = false
 
 
 -- set up training engine:
@@ -184,9 +195,11 @@ engine.hooks.onSample = function(state)
 
     local inputs_features, inputs_hms = {}, {}
     if model_hms then
-        inputs_features = process_inputs(model_features, state.sample.input_feats[1])
-        inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
-        inputs_hms[inputs_hms:lt(0)]=0
+        if model_features then inputs_features = process_inputs(model_features, state.sample.input_feats[1]) end
+        if model_hms then
+            inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
+            inputs_hms[inputs_hms:lt(0)]=0
+        end
     else
         local batch_features = {}
         for ibatch=1, opt.batchSize do
@@ -236,6 +249,9 @@ end
 engine.hooks.onForward = function(state)
    if not state.training then
       xlua.progress(state.t, nBatchesTest)
+      if state.t == 94 then
+        aqui=1
+        end
    end
 end
 
@@ -248,6 +264,7 @@ end
 
 engine.hooks.onForwardCriterion = function(state)
     if state.training then
+        meters.train_conf:add(state.network.output,state.sample.target)
         meters.train:add(state.criterion.output)
         meters.train_clerr:add(state.network.output,state.sample.target)
         if opt.verbose then
@@ -264,6 +281,7 @@ engine.hooks.onForwardCriterion = function(state)
 
         loggers.full_train:add{state.criterion.output}
     else
+        meters.test_conf:add(state.network.output,state.sample.target)
         meters.clerr:add(state.network.output,state.sample.target)
         meters.test:add(state.criterion.output)
         local tar = torch.ByteTensor(#state.network.output):fill(0)
@@ -303,6 +321,17 @@ engine.hooks.onEndEpoch = function(state)
     print("Accuracy: Top 5%", meters.train_clerr:value{k = 5} .. '%')
     -- measure test loss and error:
     loggers.train:add{meters.train:value(),meters.train_clerr:value()[1]}
+    local tr = optim.ConfusionMatrix(opt.activities)
+    tr.mat = meters.train_conf:value()
+    loggers.train_conf:add{tr:__tostring__()} -- output the confusion matrix as a string
+    if opt.printConfusion then
+        print(tr)
+    else
+        tr:updateValids();
+        print('+ average row correct: ' .. (tr.averageValid*100) .. '%')
+        print('+ average rowUcol correct (VOC measure): ' .. (tr.averageUnionValid*100) .. '%')
+        print('+ global correct: ' .. (tr.totalValid*100) .. '%')
+    end
     meters:reset()
     state.t = 0
 
@@ -328,6 +357,19 @@ engine.hooks.onEndEpoch = function(state)
         print("Accuracy: Top 5%", meters.clerr:value{k = 5} .. '%')
         print("mean AP:",meters.ap:value():mean())
         accuracy_top1 = meters.clerr:value{k = 1}
+
+        local ts = optim.ConfusionMatrix(opt.activities)
+        ts.mat = meters.test_conf:value()
+        loggers.test_conf:add{ts:__tostring__()} -- output the confusion matrix as a string
+
+        if opt.printConfusion then
+            print(ts)
+        else
+            ts:updateValids();
+            print('+ average row correct: ' .. (ts.averageValid*100) .. '%')
+            print('+ average rowUcol correct (VOC measure): ' .. (ts.averageUnionValid*100) .. '%')
+            print('+ global correct: ' .. (ts.totalValid*100) .. '%')
+        end
     end
 
     --------------------------------

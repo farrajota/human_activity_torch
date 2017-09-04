@@ -83,21 +83,26 @@ local timers = {
 }
 
 local meters = {
+    confusion_matrix = tnt.ConfusionMeter{k = opt.num_activities},
     clerr = tnt.ClassErrorMeter{topk = {1,5},accuracy=true},
     ap = tnt.APMeter(),
 }
 
 function meters:reset()
+    self.confusion_matrix:reset()
     self.clerr:reset()
     self.ap:reset()
 end
 
 local loggers = {
-    test = Logger(paths.concat(opt.save,'Evaluation_full.log'), opt.continue)
+    test = Logger(paths.concat(opt.save,'Evaluation_full.log'), opt.continue),
+    confusion_matrix = Logger(paths.concat(opt.save,'Evaluation_confusion.log'), opt.continue)
 }
 
 loggers.test:setNames{'Top-1 accuracy (%)', 'Top-5 accuracy (%)', 'Average Precision'}
+loggers.confusion_matrix:setNames{'Test confusion matrix'}
 loggers.test.showPlot = false
+loggers.confusion_matrix.showPlot = false
 
 -- set up training engine:
 local engine = tnt.OptimEngine()
@@ -143,7 +148,11 @@ engine.hooks.onSample = function(state)
 
     local inputs_features, inputs_hms
     if model_features then inputs_features = process_inputs(model_features, state.sample.input_feats[1]) end
-    if model_hms then inputs_hms = process_inputs(model_hms, state.sample.input_hms[1]) end
+    if model_hms then
+        inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
+        inputs_hms[inputs_hms:lt(0)]=0
+        inputs_hms = inputs_hms:view(1, inputs_hms:size(2), -1)
+    end
     --local inputs_features = process_inputs(model_features, state.sample.input_feats[1])
     --local inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
 
@@ -182,7 +191,8 @@ engine.hooks.onForward= function(state)
     local out = softmax:forward(state.network.output)
     if string.find(opt.netType, 'lstm') then
         local end_idx = state.sample.target:size(1)
-        meters.clerr:add(out[{{end_idx}, {}}],state.sample.target[{{end_idx}}])
+        meters.clerr:add(out[{{end_idx}, {}}], state.sample.target[{{end_idx}}])
+        meters.confusion_matrix:add(out[{{end_idx}, {}}], state.sample.target[{{end_idx}}])
         local tar = torch.ByteTensor(out:size(2)):fill(0)
         local id = state.sample.target[end_idx]
         tar[id] = 1
@@ -210,6 +220,13 @@ engine.hooks.onEnd= function(state)
     print("Accuracy: Top 1%", meters.clerr:value{k = 1} .. '%')
     print("Accuracy: Top 5%", meters.clerr:value{k = 5} .. '%')
     print("mean AP:",meters.ap:value():mean())
+
+    if opt.test_printConfusion then
+        local ts = optim.ConfusionMatrix(opt.activities)
+        ts.mat = meters.confusion_matrix:value()
+        loggers.confusion_matrix:add{ts:__tostring__()} -- output the confusion matrix as a string
+        print(ts)
+    end
 end
 
 
