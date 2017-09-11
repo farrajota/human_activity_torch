@@ -1,5 +1,5 @@
 --[[
-    Demo the activity estimation network on a dataset.
+    Demo: estimate an action on a video of a dataset.
 --]]
 
 
