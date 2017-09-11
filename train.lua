@@ -120,7 +120,7 @@ local loggers = {
     test = Logger(paths.concat(opt.save,'test.log'), opt.continue),
     train = Logger(paths.concat(opt.save,'train.log'), opt.continue),
     full_train = Logger(paths.concat(opt.save,'full_train.log'), opt.continue),
-    
+
     train_conf = Logger(paths.concat(opt.save, 'train_confusion.log'), opt.continue),
     test_conf = Logger(paths.concat(opt.save, 'test_confusion.log'), opt.continue),
 }
@@ -191,6 +191,32 @@ engine.hooks.onSample = function(state)
         return features
     end
     --------
+    local function jit_heatmap(hm, offset)
+        assert(hm)
+        assert(offset)
+        assert(offset > 0)
+
+        local hm_jittered = torch.FloatTensor(hm:size()):fill(0):typeAs(hm)
+        local iH = hm:size(2)
+        local iW = hm:size(3)
+        local oH = torch.random(-offset, offset)
+        local oW = torch.random(-offset, offset)
+        if oH >= 0 and oW >= 0 then
+            hm_jittered[{{}, {oH+1, iH}, {oW+1, iW}}]:copy(hm[{{}, {1, iH-oH}, {1, iW-oW}}])
+        elseif oH >= 0 and oW < 0 then
+            local oW = math.abs(oW)
+            hm_jittered[{{}, {oH+1, iH}, {1, iW-oW}}]:copy(hm[{{}, {1, iH-oH}, {oW+1, iW}}])
+        elseif oH < 0 and oW >= 0 then
+            local oH = math.abs(oH)
+            hm_jittered[{{}, {1, iH-oH}, {oW+1, iW}}]:copy(hm[{{}, {oH+1, iH}, {1, iW-oW}}])
+        else
+            local oH = math.abs(oH)
+            local oW = math.abs(oW)
+            hm_jittered[{{}, {1, iH-oH}, {1, iW-oW}}]:copy(hm[{{}, {oH+1, iH}, {oW+1, iW}}])
+        end
+        return hm_jittered
+    end
+    --------
 
 
     local inputs_features, inputs_hms = {}, {}
@@ -199,6 +225,13 @@ engine.hooks.onSample = function(state)
         if model_hms then
             inputs_hms = process_inputs(model_hms, state.sample.input_hms[1])
             inputs_hms[inputs_hms:lt(0)]=0
+            if opt.heatmap_jit then
+                for ibatch=1, opt.batchSize do
+                    for iseq=1, opt.seq_length do
+                        inputs_hms[ibatch][iseq] = jit_heatmap(inputs_hms[ibatch][iseq], opt.heatmap_jit)
+                    end
+                end
+            end
         end
     else
         local batch_features = {}

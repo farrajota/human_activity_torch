@@ -62,3 +62,48 @@ function getPreds(hm)
     return preds
 end
 
+------------------------------------------------------------------------------------------------------------
+
+function getPredsFull(hms, center, scale)
+    assert(hms)
+    assert(center)
+    assert(scale)
+
+    if hms:dim() == 3 then hms = hms:view(1, hms:size(1), hms:size(2), hms:size(3)) end
+
+    local preds, preds_tf
+    if opt.subpixel_precision then
+        -- Get locations of maximum activations (using sub-pixel precision)
+        local max, idx = torch.max(hms:view(hms:size(1), hms:size(2), hms:size(3) * hms:size(4)), 3)
+        local coords_peak = torch.repeatTensor(idx, 1, 1, 2):float()
+        coords_peak[{{}, {}, 1}]:apply(function(x) return x % hms:size(4) end)
+        coords_peak[{{}, {}, 2}]:div(hms:size(3)):ceil()
+        preds = fitParabolaAll(hms, coords_peak)
+
+        -- Get transformed coordinates
+        preds_tf = torch.zeros(preds:size())
+        for i = 1,hms:size(1) do        -- Number of samples
+            for j = 1,hms:size(2) do    -- Number of output heatmaps for one sample
+                preds_tf[i][j] = transform(preds[i][j],center,scale,0,hms:size(3),true)
+            end
+        end
+    else
+        -- Get locations of maximum activations (OLD CODE)
+        local max, idx = torch.max(hms:view(hms:size(1), hms:size(2), hms:size(3) * hms:size(4)), 3)
+        preds = torch.repeatTensor(idx, 1, 1, 2):float()
+        preds[{{}, {}, 1}]:apply(function(x) return (x - 1) % hms:size(4) + 1 end)
+        preds[{{}, {}, 2}]:add(-1):div(hms:size(3)):floor():add(1)
+        local predMask = max:gt(0):repeatTensor(1, 1, 2):float()
+        preds:add(-.5):cmul(predMask):add(1)
+
+        -- Get transformed coordinates
+        preds_tf = torch.zeros(preds:size())
+        for i = 1,hms:size(1) do        -- Number of samples
+            for j = 1,hms:size(2) do    -- Number of output heatmaps for one sample
+                preds_tf[i][j] = transformBenchmark(preds[i][j],center,scale,0,hms:size(3),true)
+            end
+        end
+    end
+
+    return preds, preds_tf
+end

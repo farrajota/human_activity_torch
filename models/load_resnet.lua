@@ -38,6 +38,7 @@ end
 local function load_resnet50()
     local net = torch.load(paths.concat(filepath, 'model_resnet-50.t7'))
     local params = torch.load(paths.concat(filepath, 'parameters_resnet-50.t7'))
+    params.num_feats = 2048
 
     net:remove(net:size()) -- remove linear layer
     --net:remove(net:size()) -- remove view
@@ -92,7 +93,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local function load_network(netType)
-    local netType = netType or 'resnet32'
+    local netType = netType or 'resnet50'
     if netType == 'resnet18' then
         return load_resnet18()
     elseif netType == 'resnet32' then

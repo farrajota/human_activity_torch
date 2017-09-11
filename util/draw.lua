@@ -34,47 +34,10 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
-function drawSkeletonFLIC(input, hms, coords)
-
-    local im = input:clone()
-
-    local pairRef = {
-        --{1,4}, {2,5}, {3,6}, {7,8}
-        {1,2}, {2,3},
-        {4,5}, {5,6},
-        {7,8},
-        {9,10}, {10,11}, {9,11}
-
-    }
-
-    local partNames = {'LSho','LElb','LWri','RSho','RElb','RWri',
-                       'LHip','RHip', 'LEye', 'REye', 'Nose'}
-    local partColor = {1,1,1,2,2,2,3,3,4,4,4}
-
-    local actThresh = 0.00001
-
-    -- Loop through adjacent joint pairings
-    for i = 1,#pairRef do
-        if hms[pairRef[i][1]]:mean() > actThresh and hms[pairRef[i][2]]:mean() > actThresh then
-            -- Set appropriate line color
-            local color
-            if partColor[pairRef[i][1]] == 1 then color = {.1, 1, .1}
-            elseif partColor[pairRef[i][1]] == 2 then color = {1, 0, .3}
-            elseif partColor[pairRef[i][1]] == 3 then color = {0, 0, 1}
-            elseif partColor[pairRef[i][1]] == 4 then color = {0, .2, 1}
-            else color = {.7,0,.7} end
-
-            -- Draw line
-            im = drawLineColor(im, coords[pairRef[i][1]], coords[pairRef[i][2]], 4, color, 0)
-        end
-    end
-
-    return im
-end
-
-------------------------------------------------------------------------------------------------------------
-
-function drawSkeletonLSP(input, hms, coords)
+function drawSkeleton(input, hms, coords)
+    assert(input)
+    assert(hms)
+    assert(coords)
 
     local im = input:clone()
 
@@ -110,68 +73,6 @@ function drawSkeletonLSP(input, hms, coords)
     end
 
     return im
-end
-
-------------------------------------------------------------------------------------------------------------
-
-function drawSkeletonMPII(input, hms, coords)
-
-    local im = input:clone()
-
-    local pairRef = {
-        {1,2},      {2,3},      {3,7},
-        {4,5},      {4,7},      {5,6},
-        {7,9},      {9,10},
-        {14,9},     {11,12},    {12,13},
-        {13,9},     {14,15},    {15,16}
-    }
-
-    local partNames = {'RAnk','RKne','RHip','LHip','LKne','LAnk',
-                       'Pelv','Thrx','Neck','Head',
-                       'RWri','RElb','RSho','LSho','LElb','LWri'}
-    local partColor = {1,1,1,2,2,2,0,0,0,0,3,3,3,4,4,4}
-
-    local actThresh = 0.002
-
-    -- Loop through adjacent joint pairings
-    for i = 1,#pairRef do
-        if hms[pairRef[i][1]]:mean() > actThresh and hms[pairRef[i][2]]:mean() > actThresh then
-            -- Set appropriate line color
-            local color
-            if partColor[pairRef[i][1]] == 1 then color = {0, .3, 1}
-            elseif partColor[pairRef[i][1]] == 2 then color = {1, .3, 0}
-            elseif partColor[pairRef[i][1]] == 3 then color = {0, 0, 1}
-            elseif partColor[pairRef[i][1]] == 4 then color = {1, 0, 0}
-            else color = {.7,0,.7} end
-
-            -- Draw line
-            im = drawLineColor(im, coords[pairRef[i][1]], coords[pairRef[i][2]], 4, color, 0)
-        end
-    end
-
-    return im
-end
-
-------------------------------------------------------------------------------------------------------------
-
-function drawSkeleton(input, hms, coords, db)
-    assert(input)
-    assert(hms)
-    assert(coords)
-    assert(db)
-
-    local str = string.lower(db)
-    if str == 'flic' then
-        return drawSkeletonFLIC(input, hms, coords)
-    elseif str == 'lsp' or str == 'lspe' or str == 'lsp+mpii' then
-        return drawSkeletonLSP(input, hms, coords)
-    elseif str == 'mpii' then
-        return drawSkeletonMPII(input, hms, coords)
-    elseif str == 'coco' then
-        error('skeleton draw for the COCO dataset is not yet available.')
-    else
-        error('Invalid dataset: ' .. db)
-    end
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -212,10 +113,10 @@ end
 
 ------------------------------------------------------------------------------------------------------------
 
-function drawSkeletonSequence(inputs, hms, coords, db)
-    local out = {}
-    for i=1, inputs:size(1) do
-        table.insert(out, drawSkeleton(input[i], hms[i], coords[i], db))
-    end
-    return out
-end
+--function drawSkeletonSequence(inputs, hms, coords, db)
+--    local out = {}
+--    for i=1, inputs:size(1) do
+--        table.insert(out, drawSkeleton(input[i], hms[i], coords[i], db))
+--    end
+--    return out
+--end
