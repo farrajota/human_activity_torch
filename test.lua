@@ -180,7 +180,7 @@ engine.hooks.onForward= function(state)
     if opt.test_progressbar then
         xlua.progress(state.t, nSamples)
     else
-        print(('test: %5d/%-5d ' .. 'seq_length=%d   ' .. 
+        print(('test: %5d/%-5d ' .. 'seq_length=%d   ' ..
                 'features forward time: %.3fs, classifier forward time: %.3fs, ' ..
                 'total time: %0.3fs'):format(state.t, nSamples, num_imgs_seq,
                 timers.featTimer:time().real,
