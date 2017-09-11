@@ -262,11 +262,11 @@ local function process_images_crops(imgs, imgs_transf, idxs, params_transform, i
                 iW = math.max(1, math.floor((new_img:size(3)-224)/2))
                 iH = math.max(1, math.floor((new_img:size(2)-224)/2))
             else
-                if not opt.same_transform_features or true then  -- added or true for testing
+                if not opt.same_transform_features then
                     img_size = torch.random(224,256)
                 end
                 new_img = resize_image(img, img_size)
-                if (iW == nil or iH == nil) or not opt.same_transform_features or true then  -- added or true for testing
+                if (iW == nil or iH == nil) or not opt.same_transform_features then
                     iW = torch.random(1, math.max(1, new_img:size(3) - 224))
                     iH = torch.random(1, math.max(1, new_img:size(2) - 224))
                 end
