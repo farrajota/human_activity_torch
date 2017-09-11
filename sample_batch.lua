@@ -447,44 +447,6 @@ function getSampleTest(data_loader, idx)
     -- get batch data
     local sample = fetch_single_data(data_loader, idx, false, false)
 
-    --[[
-    -- sample size
-    local sample_seq_length = math.max(#sample[1], #sample[2])
-    local min_seq_length = opt.seq_length
-    local seq_length = math.max(min_seq_length, sample_seq_length)
-    local ini = 0  -- this padding is needed for cases where the test sequence length is smaller than the train seq length
-    if min_seq_length > sample_seq_length then
-        ini = min_seq_length - sample_seq_length
-    end
-
-    -- images data
-    --local imgs_hms = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0)
-    --local imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0)
-    --local ini_id = 1
-    --for j=1, seq_length do
-    --    imgs_hms[1][j]:copy(sample[1][ini_id])
-    --    imgs_feats[1][j]:copy(sample[2][ini_id])
-    --    ini_id = ini_id + 1
-    --    if ini_id > sample_seq_length then
-    --        ini_id = 1
-    --    end
-    --end
-
-    -- images data
-    local imgs_hms, imgs_feats
-    if next(sample[1]) then imgs_hms = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0) end
-    if next(sample[2]) then imgs_feats = torch.FloatTensor(1, seq_length, 3, 224, 224):fill(0) end
-    local ini_id = 1
-    for j=1, seq_length do
-        if imgs_hms then imgs_hms[1][j]:copy(sample[1][ini_id]) end
-        if imgs_feats then imgs_feats[1][j]:copy(sample[2][ini_id]) end
-        ini_id = ini_id + 1
-        if ini_id > sample_seq_length then
-            ini_id = 1
-        end
-    end
-    ]]
-
     local seq_length = math.max(#sample[1], #sample[2])
     local imgs_hms, imgs_feats
     if next(sample[1]) then imgs_hms = torch.FloatTensor(1, seq_length, 3, opt.inputRes, opt.inputRes):fill(0) end
