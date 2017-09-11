@@ -161,6 +161,7 @@ local function process_images_heatmaps(imgs, idxs, params_transform, is_test)
     local is_test = is_test or false
 
     local imgs_transf = {}
+    local imgs_params = {}
 
     local prev_center, prev_scale = imgs[1].center, imgs[1].scale
     local prev_bbox = imgs[1].bbox
@@ -196,6 +197,14 @@ local function process_images_heatmaps(imgs, idxs, params_transform, is_test)
             table.insert(imgs_transf, new_img)
         end
 
+        table.insert( imgs_params, {
+            center = center,
+            scale = scale,
+            bbox = bbox,
+            idx = idx,
+            img = img
+        })
+
         if not (scale < 0 or bbox:sum() == 0 or bbox[4]-bbox[2] < 20) then
             prev_bbox = bbox
             prev_center = center
@@ -203,7 +212,7 @@ local function process_images_heatmaps(imgs, idxs, params_transform, is_test)
         end
     end
 
-    return imgs_transf
+    return imgs_transf, imgs_params
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -281,7 +290,7 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
     local imgs, label = data_loader.loader(idx)
 
     -- get cropped images + heatmaps
-    local imgs_transf, imgs_resized = {}, {}
+    local imgs_transf, imgs_params, imgs_resized = {}, {}, {}
     if is_train or use_subset then
         -- select a subset of images from the video
         local idxs = fetch_subset_images(#imgs, opt.seq_length, opt.step)
@@ -291,7 +300,7 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
 
         -- process heatmaps
         if opt.process_input_heatmap or opt.use_center_crop then
-            imgs_transf = process_images_heatmaps(imgs, idxs, params_transform, false)
+            imgs_transf, imgs_params = process_images_heatmaps(imgs, idxs, params_transform, false)
         end
 
         -- process images
@@ -304,7 +313,7 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
 
         -- process heatmaps
         if opt.process_input_heatmap or opt.use_center_crop then
-            imgs_transf = process_images_heatmaps(imgs, idxs, {}, true)
+            imgs_transf, imgs_params = process_images_heatmaps(imgs, idxs, {}, true)
         end
 
         -- process images
@@ -316,7 +325,7 @@ local function fetch_single_data(data_loader, idx, is_train, use_subset)
     imgs = nil
     collectgarbage()
 
-    return {imgs_transf, imgs_resized, label}
+    return {imgs_transf, imgs_resized, label, imgs_params}
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -378,10 +387,11 @@ function getSampleBatch(data_loader, batchSize, is_train)
     local sample = get_batch(data_loader, batchSize, is_train)
 
     -- images (for body joints)
-    local imgs_hms
+    local imgs_hms, imgs_params
     if next(sample[1][1]) then
         imgs_hms = torch.FloatTensor(batchSize, opt.seq_length,
-                                           3, opt.inputRes, opt.inputRes):fill(0)
+                                     3, opt.inputRes, opt.inputRes):fill(0)
+        imgs_params = {}
         for i=1, batchSize do
             local prev_sample = sample[i][1][1]
             for j=1, opt.seq_length do
@@ -393,6 +403,7 @@ function getSampleBatch(data_loader, batchSize, is_train)
                 end
                 imgs_hms[i][j]:copy(sample_)
             end
+            table.insert(imgs_params, sample[i][4])
         end
     end
 
@@ -400,7 +411,7 @@ function getSampleBatch(data_loader, batchSize, is_train)
     local imgs_feats
     if next(sample[1][2]) then
         imgs_feats = torch.FloatTensor(batchSize, opt.seq_length,
-                                             3, 224, 224):fill(0)
+                                       3, 224, 224):fill(0)
         for i=1, batchSize do
             local prev_sample = sample[i][2][1]
             for j=1, opt.seq_length do
@@ -423,7 +434,7 @@ function getSampleBatch(data_loader, batchSize, is_train)
 
     collectgarbage()
 
-    return imgs_hms, imgs_feats, labels_tensor
+    return imgs_hms, imgs_feats, labels_tensor, imgs_params
 end
 
 
@@ -488,5 +499,5 @@ function getSampleTest(data_loader, idx)
 
     collectgarbage()
 
-    return imgs_hms, imgs_feats, labels_tensor
+    return imgs_hms, imgs_feats, labels_tensor, sample[4]
 end
