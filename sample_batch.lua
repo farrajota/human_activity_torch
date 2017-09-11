@@ -163,6 +163,8 @@ local function process_images_heatmaps(imgs, idxs, params_transform, is_test)
     local imgs_transf = {}
     local imgs_params = {}
 
+    -- Check if the first frame has any annotation.
+    -- If not, generate a center box + scale
     local prev_center, prev_scale = imgs[1].center, imgs[1].scale
     local prev_bbox = imgs[1].bbox
     if prev_bbox:sum() == 0 or prev_bbox[4]-prev_bbox[2] < 20 then
@@ -171,6 +173,8 @@ local function process_images_heatmaps(imgs, idxs, params_transform, is_test)
                                         (prev_bbox[2] + prev_bbox[4])/2})
         prev_scale = (prev_bbox[4]-prev_bbox[2]) / 200 * 1.25
     end
+
+    -- cycle all image indexes of the sequence
     for _, idx in ipairs(idxs) do
         local img = imgs[idx].img
         local scale = imgs[idx].scale
@@ -188,7 +192,7 @@ local function process_images_heatmaps(imgs, idxs, params_transform, is_test)
             if not img_crop then return {} end -- skip this round of data/transforms if any error occurs
             table.insert(imgs_transf, img_crop)
         else
-            if not opt.same_transform then
+            if not opt.same_transform_heatmaps then
                 params_transform = get_random_transforms(is_train)
             end
 
@@ -235,12 +239,12 @@ local function process_images_crops(imgs, imgs_transf, idxs, params_transform, i
                 local new_img = image.scale(img, 224)
                 table.insert(imgs_resized, normalize_image(new_img))
             else
-                if not opt.same_transform then
+                if not opt.same_transform_features then
                     img_size = torch.random(224,256)
                 end
 
                 local new_img = resize_image(imgs_transf[i], img_size)
-                if (iW == nil or iH == nil) or not opt.same_transform then
+                if (iW == nil or iH == nil) or not opt.same_transform_features then
                     iW = torch.random(1, math.max(1, new_img:size(3) - 224))
                     iH = torch.random(1, math.max(1, new_img:size(2) - 224))
                 end
@@ -258,11 +262,11 @@ local function process_images_crops(imgs, imgs_transf, idxs, params_transform, i
                 iW = math.max(1, math.floor((new_img:size(3)-224)/2))
                 iH = math.max(1, math.floor((new_img:size(2)-224)/2))
             else
-                if not opt.same_transform or true then  -- added or true for testing
+                if not opt.same_transform_features or true then  -- added or true for testing
                     img_size = torch.random(224,256)
                 end
                 new_img = resize_image(img, img_size)
-                if (iW == nil or iH == nil) or not opt.same_transform or true then  -- added or true for testing
+                if (iW == nil or iH == nil) or not opt.same_transform_features or true then  -- added or true for testing
                     iW = torch.random(1, math.max(1, new_img:size(3) - 224))
                     iH = torch.random(1, math.max(1, new_img:size(2) - 224))
                 end
