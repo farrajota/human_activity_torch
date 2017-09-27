@@ -193,7 +193,7 @@ local function process_images_heatmaps(imgs, idxs, params_transform, is_test)
             table.insert(imgs_transf, img_crop)
         else
             if not opt.same_transform_heatmaps then
-                params_transform = get_random_transforms(is_train)
+                params_transform = get_random_transforms(true)
             end
 
             local new_img = transform_data(img, center, scale, params_transform)
