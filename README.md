@@ -121,18 +121,16 @@ The results of the test, when finished, are displayed on screen and stored in th
 | --- | --- |
 | Rodriges et al. [1] | 69.2 |
 | Lan et al. [2] | 83.7 |
-| Jones et al. [3] | **93.5** |
+| **Jones et al. [3]** | **93.5** |
 |  |  |
 | PoseNet + LSTM | 59.6 |
 | ResNet + LSTM | 80.9 |
 | **Resnet + PoseNet + LSTM** | **87.2** |
 
 
-[1] - Rodriguez, M.D., Ahmed, J., Shah, M.: Action mach a spatio-temporal maximum av-
-erage correlation height filter for action recognition. In: CVPR, pp. 1–8. IEEE (2008)
+[1] - Rodriguez, M.D., Ahmed, J., Shah, M.: Action mach a spatio-temporal maximum average correlation height filter for action recognition. In: CVPR, pp. 1–8. IEEE (2008)
 
-[2] - Lan, T., Wang, Y., Mori, G.: Discriminative figure-centric models for joint action local-
-ization and recognition. In: ICCV, pp. 2003–2010. IEEE (2011)
+[2] - Lan, T., Wang, Y., Mori, G.: Discriminative figure-centric models for joint action localization and recognition. In: ICCV, pp. 2003–2010. IEEE (2011)
 
 [3] - Jones, S., Shao, L., Zhang, J., Liu, Y.: Relevance feedback for real-world human action
 retrieval. Pattern Recognition Letters 33(4), 446–452 (2012)
