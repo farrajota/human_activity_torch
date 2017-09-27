@@ -38,7 +38,7 @@ end
 --[[ Create VGG16 + spatial average pooling + lin layer ]]--
 local function create_network()
 
-    local hms_features, params = paths.dofile('../load_hg_best.lua')()
+    local hms_features, params = paths.dofile('../load_posenet.lua')()
     hms_features:evaluate()
 
     local classifier = load_classifier_network(params.feat_size,

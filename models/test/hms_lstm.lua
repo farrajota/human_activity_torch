@@ -28,7 +28,7 @@ end
 --[[ Create VGG16 + LSTM ]]--
 local function create_network()
 
-    local hms_features, params = paths.dofile('../load_hg_best.lua')()
+    local hms_features, params = paths.dofile('../load_posenet.lua')()
     hms_features:evaluate()
 
     params.feat_size = params.dims[1] * params.dims[2] * params.dims[3]
