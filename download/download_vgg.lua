@@ -22,7 +22,7 @@ cmd:option('-save_path',  projectDir .. '/data', 'Experiment ID')
 cmd:text()
 
 local opt = cmd:parse(arg or {})
-local savepath = paths.concat(opt.save_path, 'pretrained_models')
+local savepath = paths.concat(opt.save_dir, 'pretrained_models')
 
 -- create directory if needed
 if not paths.dirp(savepath) then
