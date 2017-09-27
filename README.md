@@ -119,7 +119,7 @@ The results of the test, when finished, are displayed on screen and stored in th
 
 | Method | Accuracy (%) |
 | --- | --- |
-| Rodriges et al. [1] | 69.2 |
+| Rodriguez et al. [1] | 69.2 |
 | Lan et al. [2] | 83.7 |
 | **Jones et al. [3]** | **93.5** |
 |  |  |
