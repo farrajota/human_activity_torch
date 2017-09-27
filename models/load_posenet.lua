@@ -5,7 +5,7 @@
 
 local function load_network()
     local filepath = paths.concat(projectDir, 'data', 'pretrained_models')
-    local hg_net = torch.load(paths.concat(filepath, 'hg-best.t7'))
+    local hg_net = torch.load(paths.concat(filepath, 'posenet.t7'))
 
     local nparts = 14
 
