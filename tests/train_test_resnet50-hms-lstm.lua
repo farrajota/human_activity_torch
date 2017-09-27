@@ -35,7 +35,7 @@ local function get_configs()
         optMethod = 'adam',
         LR = 1e-4,
         nThreads = 4,
-        nEpochs = 10,
+        nEpochs = 30,
         trainIters = 300,
         testIters = 100,
         seq_length = 30,
@@ -52,7 +52,7 @@ local function get_configs()
         -- test options
         test_progressbar = 'false',
         test_load_best = 'true',
-        test_seq_length = 60,
+        test_seq_length = 90,
         test_step = 1,
         test_printConfusion = 'true',
     }
