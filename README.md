@@ -6,12 +6,11 @@ Recognize human activities of individuals using human body joints on video seque
 
 This method combines features from a ResNet 50 with human body joint prediction to improve performance in human action recognition applications. It uses a modifed [Stacked Hourglass Network](https://arxiv.org/abs/1603.06937) trained on the LSP+MPII datasets to predict human body joints for a sequence of images.
 
-![network](img/pose_resnet_architecture.png "Network architecture") <!-- .element height="50%" width="50%" -->
-
+<img src="img/pose_resnet_architecture.png" alt="Network architecture" height="70%" width="70%">
 
 The proposed network takes as input a sequence of images with centered persons which are then processed by two parallel networks that produce image features and 2D heatmaps of human body joint which are then fed to a couple of LSTM layers to compute the classification score for a video sequence.
 
-![inputs+feats+outputs](img/intro_feats_v2.png "inputs, features and output")
+<img src="img/intro_feats_v2.png" alt="inputs, features and output" height="70%" width="70%">
 
 
 > Note: This was only tested on the UCF Sports dataset because it had bounding box annotations of humans available.
