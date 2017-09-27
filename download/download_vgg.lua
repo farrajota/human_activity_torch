@@ -14,7 +14,7 @@ paths.dofile('../projectdir.lua')
 
 local cmd = torch.CmdLine()
 cmd:text()
-cmd:text('Torch-7 Fast-RCNN download pretrained models.')
+cmd:text('Download VGG pretrained models.')
 cmd:text()
 cmd:text(' ---------- General options ------------------------------------')
 cmd:text()
