@@ -122,10 +122,16 @@ engine.hooks.onSample = function(state)
 
     timers.featTimer:reset()
 
-    if type(state.sample.input_feats[1]) == 'userdata' then
-        num_imgs_seq = state.sample.input_feats[1]:size(2)
-    else
+    if state.sample.input_feats then
+        if type(state.sample.input_feats[1]) == 'userdata' then
+            num_imgs_seq = state.sample.input_feats[1]:size(2)
+        else
+            num_imgs_seq = state.sample.input_hms[1]:size(2)
+        end
+    elseif state.sample.input_hms then
         num_imgs_seq = state.sample.input_hms[1]:size(2)
+    else
+        error('Error! No features for any nertwork is available!')
     end
 
 
