@@ -19,11 +19,12 @@ local opts = paths.dofile('../options.lua')
 opt = opts.parse(arg)
 opt.dataset = 'ucf_sports'
 opt.rotate = 15
-opt.scale = 0.02
-opt.rotRate = 0
+opt.scale = 0.15
+opt.rotRate = 0.2
 opt.batchSize = 4
-opt.seq_length = 30
-opt.same_transform = true
+opt.seq_length = 20
+opt.same_transform_heatmaps = false
+opt.same_transform_features = false
 opt.process_input_heatmap = true
 opt.process_input_feats = true
 opt.use_center_crop = true
@@ -42,6 +43,10 @@ for i=1, niters do
         a=1  -- stop debugger here
     end
     local input, imgs_feats, label = getSampleBatch(loader, opt.batchSize, true)
+
+    if label:eq(3):sum() > 0 then
+        aqui=1
+    end
 
     if plot_results then
         a = {}
