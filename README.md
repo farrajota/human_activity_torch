@@ -10,7 +10,7 @@ This method combines features from a ResNet 50 with human body joint prediction 
 
 The proposed network takes as input a sequence of images with centered persons which are then processed by two parallel networks that produce image features and 2D heatmaps of human body joint which are then fed to a couple of LSTM layers to compute the classification score for a video sequence.
 
-<img src="img/intro_feats_v2.png" alt="inputs, features and output" height="70%" width="70%">
+<img src="img/intro_feats_v2.png" alt="inputs, features and output" height="50%" width="50%">
 
 
 > Note: This was only tested on the UCF Sports dataset because it had bounding box annotations of humans available.
