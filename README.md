@@ -2,7 +2,19 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 
-Recognize human activities of individuals using body pose joint annotations on video sequences.
+Recognize human activities of individuals using human body joints on video sequences.
+
+This method combines features from a ResNet 50 with human body joint prediction to improve performance in human action recognition applications. It uses a modifed [Stacked Hourglass Network](https://arxiv.org/abs/1603.06937) trained on the LSP+MPII datasets to predict human body joints for a sequence of images.
+
+![network](img/pose_resnet_architecture.png "Network architecture") <!-- .element height="50%" width="50%" -->
+
+
+The proposed network takes as input a sequence of images with centered persons which are then processed by two parallel networks that produce image features and 2D heatmaps of human body joint which are then fed to a couple of LSTM layers to compute the classification score for a video sequence.
+
+![inputs+feats+outputs](img/intro_feats_v2.png "inputs, features and output")
+
+
+> Note: This was only tested on the UCF Sports dataset because it had bounding box annotations of humans available.
 
 
 ## Installation
@@ -29,9 +41,9 @@ To install the dbcollection package do the following:
 
 - install the Python module (Python>=2.7 and >=3.5).
 
-```
-pip install dbcollection
-```
+    ```
+    pip install dbcollection
+    ```
 
 - install the Lua/Torch7 dbcollection wrapper:
 
@@ -51,7 +63,7 @@ pip install dbcollection
 
 # Getting started
 
-## Download/Setting up this repo
+## Download/setup this repo
 
 To start using this repo you'll need to clone this repo into your home directory:
 
@@ -59,20 +71,20 @@ To start using this repo you'll need to clone this repo into your home directory
 git clone https://github.com/farrajota/human_activity_torch
 ```
 
-By default, this repo path points to `~/human_activity_torch/` when running the scripts. If you want to save/place this repo into another path/directory, you'll need to edit the `projectdir.lua` file in the repo's root dir and set the proper path to where you cloned it.
+By default, this repo path points to `~/human_activity_torch/` when running the scripts. If you want to use this repo with another path/directory, you'll need to edit the `projectdir.lua` file in the repo's root dir and set the proper path to where it was cloned.
 
-Next, the necessary data for this code to run is needed to be set. Download the `VGG16` model by running the `download_vgg.lua` script in the `download/` dir:
+Next, the necessary data for this code to run is needed to be set. Download the pre-trained models by ruining the script `download_data.lua` script in the `download/` dir:
 
 ```
-th download/download_vgg.lua
+th download/download_data.lua
 ```
 
-The `vgg16` model uses the `cudnn` library, so make sure this package is installed on your system before proceeding any further.
+The pre-trained models uses the `cudnn` library, so make sure this package is installed on your system before proceeding any further.
 
 
 ## Train
 
-To train a network, simply run the `train.lua` script to start optimizing a pre-defined network (vgg16 + LSTM) on some default options. This script is configured to train the network specified in the paper [TODO- insert paper link]().
+To train a network, simply run the `train.lua` script to start optimizing the proposed network (ResNet50 + Pose Hms + LSTM) on some default options. The default configurations are detailed in the the paper [TODO- insert paper link]().
 
 To train a network, there are several input arguments to configure the training process. The most important ones are the following (the rest you can leave as defaults):
 
@@ -103,24 +115,28 @@ Evaluating a network is done by running the `test.lua` script with some input ar
 
 The results of the test, when finished, are displayed on screen and stored in the folder of the network file with the name `Evaluation_full.log`.
 
-## Demo
-
-To see the activity predictor model in action, the available demo displays the full sequence of images of a video/s in the browser. To launch the demo, you need to run `demo.lua` with some input arguments to specify which network to use and some other options:
-
-- `-expID <exp_name>`: experiment id that contains the model's snapshots + logs;
-- `-loadModel <path/to/network.t7>`: if this flag is used, it bypasses the `-expID` flag and loads a specific file;
-- `-dataset <dataset_name>`: indicates which dataset to test on (default=`ucf_sports`);
-- `-demo_nvideos <num_videos>`: number of samples to display predictions (default=5);
-- `-demo_video_ids {id1, id2, id3, ..., idn}`: selects specific video ids to display (disables `-demo_nvideos` option);
-- `-demo_topk <num>`: Display the top-k activities.
-- `-demo_plot_save false`: save the image plots to disk into the `results/` dir (if true).
-
-> Note: Before running this script, you must be sure you have started a display server on your local machine. You can start it by simply running `th -ldisplay.start` on a separate shell. Then, open up a tab on your browser and go to `http://localhost:8000/` to visualize the results.
-(For more information about the `display` package and how to set up tthe server with different configurations go to [https://github.com/szym/display](https://github.com/szym/display))
 
 ## Results
 
-TODO
+| Method | Accuracy (%) |
+| --- | --- |
+| Rodriges et al. [1] | 69.2 |
+| Lan et al. [2] | 83.7 |
+| Jones et al. [3] | **93.5** |
+|  |  |
+| PoseNet + LSTM | 59.6 |
+| ResNet + LSTM | 80.9 |
+| **Resnet + PoseNet + LSTM** | **87.2** |
+
+
+[1] - Rodriguez, M.D., Ahmed, J., Shah, M.: Action mach a spatio-temporal maximum av-
+erage correlation height filter for action recognition. In: CVPR, pp. 1–8. IEEE (2008)
+
+[2] - Lan, T., Wang, Y., Mori, G.: Discriminative figure-centric models for joint action local-
+ization and recognition. In: ICCV, pp. 2003–2010. IEEE (2011)
+
+[3] - Jones, S., Shao, L., Zhang, J., Liu, Y.: Relevance feedback for real-world human action
+retrieval. Pattern Recognition Letters 33(4), 446–452 (2012)
 
 ## License
 
