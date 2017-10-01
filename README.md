@@ -41,7 +41,13 @@ To install the dbcollection package do the following:
 - install the Python module (Python>=2.7 and >=3.5).
 
     ```
-    pip install dbcollection
+    pip install dbcollection==0.1.7
+    ```
+
+    or
+
+    ```
+    conda install -c farrajota dbcollection==0.1.7
     ```
 
 - install the Lua/Torch7 dbcollection wrapper:
